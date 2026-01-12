@@ -33,7 +33,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${inter.variable} ${outfit.variable} bg-slate-50 text-slate-900 antialiased`}
+        className={`${inter.variable} ${outfit.variable} bg-background text-foreground antialiased`}
       >
         <Providers>{children}</Providers>
       </body>
