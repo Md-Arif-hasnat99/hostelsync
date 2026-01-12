@@ -11,6 +11,7 @@ import { supabase } from "@/lib/supabase";
 import { useTheme } from "@/components/theme-provider";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Logo } from "@/components/Logo";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
@@ -300,9 +301,7 @@ export default function StudentDashboardPage() {
         ${showMobileMenu ? 'translate-x-0' : '-translate-x-full'}
       `}>
         <div className="flex items-center gap-3 mb-10">
-          <div className="h-8 w-8 rounded-lg bg-blue-600 p-1">
-            <Image src="/logo.png" alt="Logo" width={32} height={32} />
-          </div>
+          <Logo size={32} showText={false} />
           <span className="font-display font-bold text-foreground dark:text-white">Hostel Sync</span>
         </div>
 
@@ -341,14 +340,10 @@ export default function StudentDashboardPage() {
           <div className="flex items-center gap-4">
             <button 
               onClick={toggleTheme}
-              className="rounded-full p-2 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+              className="rounded-full p-2 text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800 transition-colors"
               title={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
             >
               {theme === "light" ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
-            </button>
-            <button className="relative rounded-full p-2 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
-              <Bell className="h-5 w-5" />
-              <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-red-500 border-2 border-white" />
             </button>
             <div className="h-8 w-px bg-slate-200" />
             <button 

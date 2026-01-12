@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
+import { Logo } from "@/components/Logo";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Bar } from "react-chartjs-2";
@@ -16,7 +17,7 @@ import {
   BarElement,
 } from "chart.js";
 import { supabase } from "@/lib/supabase";
-import { Search, LogOut, LayoutDashboard, Settings, Bell, ChevronRight, Filter, Download, Zap, RefreshCcw, TrendingUp, Users, AlertCircle, History, Plus, Sun, Moon, Menu, X } from "lucide-react";
+import { Search, LogOut, LayoutDashboard, Settings, ChevronRight, Filter, Download, Zap, RefreshCcw, TrendingUp, Users, AlertCircle, History, Plus, Sun, Moon, Menu, X } from "lucide-react";
 import { useTheme } from "@/components/theme-provider";
 import Image from "next/image";
 
@@ -207,7 +208,7 @@ export default function AdminDashboardPage() {
         ${showMobileMenu ? 'translate-x-0' : '-translate-x-full'}
       `}>
         <div className="flex items-center gap-3 mb-10">
-          <div className="h-8 w-8 rounded-lg bg-blue-600 p-1 font-bold text-white flex items-center justify-center">H</div>
+          <Logo size={32} showText={false} />
           <span className="font-display font-bold text-foreground dark:text-white">Admin Sync</span>
         </div>
 
@@ -254,7 +255,7 @@ export default function AdminDashboardPage() {
             <div className="h-8 w-px bg-slate-200" />
             <button 
               onClick={toggleTheme}
-              className="rounded-full p-2 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+              className="rounded-full p-2 text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800 transition-colors"
               title={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
             >
               {theme === "light" ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}

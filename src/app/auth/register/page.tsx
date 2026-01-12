@@ -7,8 +7,9 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { ArrowLeft, UserPlus, ShieldCheck } from "lucide-react";
+import { ArrowLeft, UserPlus, ShieldCheck, Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Logo } from "@/components/Logo";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { supabase } from "@/lib/supabase";
@@ -20,10 +21,20 @@ const schema = z.object({
     .string()
     .min(8, "Min 8 characters")
     .regex(/^(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).+$/, "Include uppercase, number, special char"),
-  hostel: z.string().min(2, "Hostel is required"),
-  room: z.string().optional(),
   role: z.enum(["student", "admin"]),
+  hostel: z.string().optional(),
+  room: z.string().optional(),
   accept: z.literal(true, { message: "Please accept terms" }),
+}).superRefine((data, ctx) => {
+  if (data.role === "student") {
+    if (!data.hostel || data.hostel.length < 2) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Hostel is required",
+        path: ["hostel"],
+      });
+    }
+  }
 });
 
 type FormData = z.infer<typeof schema>;
@@ -31,16 +42,20 @@ type FormData = z.infer<typeof schema>;
 export default function RegisterPage() {
   const router = useRouter();
   const [submitting, setSubmitting] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [infoMessage, setInfoMessage] = useState<string | null>(null);
   const {
     register,
     handleSubmit,
+    watch,
     formState: { errors },
   } = useForm<FormData>({
     resolver: zodResolver(schema),
     defaultValues: { role: "student" },
   });
+
+  const selectedRole = watch("role");
 
   const onSubmit = async (values: FormData) => {
     setSubmitting(true);
@@ -86,19 +101,17 @@ export default function RegisterPage() {
       <div className="relative flex flex-col items-center justify-center px-4 py-12 sm:px-6 lg:px-8">
         <Link
           href="/"
-          className="group mb-8 flex items-center gap-2 self-start rounded-full bg-background/50 px-4 py-2 text-sm font-bold text-muted backdrop-blur-md transition-all hover:bg-background hover:text-blue-600 sm:fixed sm:left-8 sm:top-8 sm:mb-0"
+          className="group fixed left-4 top-2 z-50 flex h-10 w-10 items-center justify-center rounded-full bg-background/80 backdrop-blur-md border border-border shadow-sm transition-all hover:bg-background hover:border-blue-200 hover:text-blue-600 hover:shadow-md md:left-8 md:top-4"
+          title="Back to Home"
         >
-          <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-1" />
-          Back
+          <ArrowLeft className="h-5 w-5 transition-transform group-hover:-translate-x-1" />
         </Link>
 
         <div className="w-full max-w-2xl animate-fade-in">
           <div className="glass overflow-hidden rounded-[2.5rem] border border-white/50 bg-white/70 shadow-2xl backdrop-blur-xl">
             <div className="p-8 md:p-12">
               <div className="mb-10 flex flex-col items-center text-center">
-                <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-blue-600 text-white shadow-lg shadow-blue-200">
-                  <UserPlus className="h-8 w-8" />
-                </div>
+                <Logo size={64} showText={false} className="mb-4 shadow-lg shadow-blue-200 rounded-full" />
                 <h1 className="font-display text-3xl font-extrabold tracking-tight text-foreground md:text-4xl">
                   Join HostelSync
                 </h1>
@@ -130,12 +143,21 @@ export default function RegisterPage() {
 
                   <div>
                     <label className="mb-2 block text-sm font-bold text-foreground">Password</label>
-                    <Input
-                      type="password"
-                      placeholder="••••••••"
-                      className="h-12 rounded-xl"
-                      {...register("password")}
-                    />
+                    <div className="relative">
+                      <Input
+                        type={showPassword ? "text" : "password"}
+                        placeholder="••••••••"
+                        className="h-12 rounded-xl pr-10"
+                        {...register("password")}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                      >
+                        {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                      </button>
+                    </div>
                     {errors.password && <p className="mt-1 text-xs font-medium text-red-500">{errors.password.message}</p>}
                   </div>
 
@@ -150,24 +172,28 @@ export default function RegisterPage() {
                     </Select>
                   </div>
 
-                  <div>
-                    <label className="mb-2 block text-sm font-bold text-foreground">Hostel Name</label>
-                    <Input
-                      placeholder="e.g. Block A"
-                      className="h-12 rounded-xl"
-                      {...register("hostel")}
-                    />
-                    {errors.hostel && <p className="mt-1 text-xs font-medium text-red-500">{errors.hostel.message}</p>}
-                  </div>
+                  {selectedRole === "student" && (
+                    <>
+                      <div>
+                        <label className="mb-2 block text-sm font-bold text-foreground">Hostel Name</label>
+                        <Input
+                          placeholder="e.g. Block A"
+                          className="h-12 rounded-xl"
+                          {...register("hostel")}
+                        />
+                        {errors.hostel && <p className="mt-1 text-xs font-medium text-red-500">{errors.hostel.message}</p>}
+                      </div>
 
-                  <div>
-                    <label className="mb-2 block text-sm font-bold text-foreground">Room Number</label>
-                    <Input
-                      placeholder="e.g. 203"
-                      className="h-12 rounded-xl"
-                      {...register("room")}
-                    />
-                  </div>
+                      <div>
+                        <label className="mb-2 block text-sm font-bold text-foreground">Room Number</label>
+                        <Input
+                          placeholder="e.g. 203"
+                          className="h-12 rounded-xl"
+                          {...register("room")}
+                        />
+                      </div>
+                    </>
+                  )}
                 </div>
 
                 <div className="space-y-4">

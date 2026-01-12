@@ -4,6 +4,7 @@ import { ArrowRight, ShieldCheck, Sparkles, TrendingUp, CheckCircle2, MessageSqu
 import Image from "next/image";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
+import { Logo } from "@/components/Logo";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "@/components/theme-provider";
 import { Sun, Moon, Menu, X } from "lucide-react";
@@ -48,8 +49,8 @@ export default function Home() {
       <header className={`sticky top-0 z-[60] h-[72px] transition-all ${showMobileMenu ? 'bg-background border-b border-border' : 'glass'}`}>
         <div className="mx-auto flex h-full max-w-7xl items-center justify-between px-4 md:px-6">
           <div className="flex items-center gap-3 group cursor-pointer">
-            <div className="relative h-10 w-10 overflow-hidden rounded-xl bg-blue-600 p-1 transition-transform group-hover:rotate-12">
-               <Image src="/logo.png" alt="Hostel Sync" width={40} height={40} className="object-contain" />
+            <div className="transition-transform group-hover:rotate-12">
+               <Logo size={40} showText={false} />
             </div>
             <span className="font-display text-xl font-bold tracking-tight text-foreground dark:text-white">
               Hostel<span className="text-blue-600">Sync</span>
@@ -135,12 +136,12 @@ export default function Home() {
                 tracking, real-time updates, and lightning-fast resolutions.
               </p>
               <div className="mt-10 flex flex-col items-center gap-4 sm:flex-row">
-                <Button asChild size="lg" className="h-14 rounded-full px-8 text-base shadow-lg shadow-blue-200 hover-lift">
+                <Button asChild size="lg" className="h-14 rounded-full px-8 text-base shadow-lg shadow-blue-200 hover-lift active:scale-95 transition-all">
                   <Link href="/auth/register">
                     Start Reporting <ArrowRight className="ml-2 h-5 w-5" />
                   </Link>
                 </Button>
-                <Button asChild variant="ghost" size="lg" className="h-14 rounded-full px-8 text-base hover:bg-slate-100">
+                <Button asChild variant="outline" size="lg" className="h-14 rounded-full px-8 text-base border-2 bg-white/50 border-slate-200 text-slate-700 hover:border-blue-600 hover:text-blue-600 hover:bg-blue-50/50 dark:bg-slate-800/50 dark:border-slate-700 dark:text-slate-200 dark:hover:border-blue-400 dark:hover:text-blue-400 dark:hover:bg-blue-900/20 hover-lift active:scale-95 transition-all">
                   <Link href="/auth/login?role=admin">Admin Dashboard</Link>
                 </Button>
               </div>
@@ -202,9 +203,9 @@ export default function Home() {
                   </div>
                   <div className="mt-6 space-y-6">
                     <div className="flex items-center gap-4">
-                      <div className="h-10 w-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 dark:text-slate-400 font-bold">JD</div>
+                      <div className="h-10 w-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 dark:text-slate-400 font-bold">AM</div>
                       <div>
-                        <p className="text-sm font-bold text-foreground dark:text-white">John Doe (Student)</p>
+                        <p className="text-sm font-bold text-foreground dark:text-white">Alex Morgan (Student)</p>
                         <p className="text-xs text-slate-500">Submitted 2 hours ago</p>
                       </div>
                     </div>
@@ -235,10 +236,10 @@ export default function Home() {
                   Join hundreds of students who are already using Hostel Sync to make their living space better.
                 </p>
                 <div className="mt-10 flex flex-wrap justify-center gap-4">
-                  <Button asChild size="lg" variant="secondary" className="bg-white text-slate-900 hover:bg-slate-50 rounded-full px-8 h-14 font-extrabold shadow-xl transition-all">
+                  <Button asChild size="lg" variant="secondary" className="bg-white text-slate-900 hover:bg-slate-50 rounded-full px-8 h-14 font-extrabold shadow-xl transition-all hover-lift active:scale-95">
                     <Link href="/auth/register">Create Student Account</Link>
                   </Button>
-                  <Button asChild size="lg" variant="ghost" className="text-white hover:bg-white/5 rounded-full px-8 h-14 border border-white/20 transition-all">
+                  <Button asChild size="lg" variant="outline" className="h-14 rounded-full px-8 text-base border-2 bg-slate-800/50 border-slate-700 text-slate-200 hover:border-blue-400 hover:text-blue-400 hover:bg-blue-900/20 hover-lift active:scale-95 transition-all">
                     <Link href="/auth/login?role=admin">Admin Access</Link>
                   </Button>
                 </div>
@@ -253,9 +254,7 @@ export default function Home() {
         <div className="mx-auto max-w-7xl px-6">
           <div className="flex flex-col items-center justify-between gap-8 md:flex-row">
             <div className="flex items-center gap-3">
-              <div className="h-8 w-8 rounded-lg bg-blue-600 p-1">
-                <Image src="/logo.png" alt="Hostel Sync" width={32} height={32} />
-              </div>
+              <Logo size={32} showText={false} />
               <span className="font-display font-bold text-foreground dark:text-white">Hostel Sync</span>
             </div>
             <div className="flex gap-8 text-sm text-slate-500">

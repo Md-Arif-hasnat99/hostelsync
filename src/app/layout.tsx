@@ -19,9 +19,9 @@ export const metadata: Metadata = {
   title: "Hostel Sync",
   description: "Hostel Sync – connect, resolve, and track hostel issues effortlessly.",
   icons: {
-    icon: "/logo.png",
-    shortcut: "/logo.png",
-    apple: "/logo.png",
+    icon: "/icon.svg",
+    shortcut: "/icon.svg",
+    apple: "/icon.svg",
   },
 };
 

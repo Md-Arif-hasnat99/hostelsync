@@ -8,6 +8,8 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
+import { ArrowLeft } from "lucide-react";
+import { Logo } from "@/components/Logo";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { rememberStorageKey, supabase } from "@/lib/supabase";
@@ -59,21 +61,20 @@ export default function LoginPage() {
     <div className="relative flex min-h-screen items-center justify-center bg-background px-4 py-12 transition-colors">
       <div className="absolute inset-0 -z-10 h-full w-full opacity-50 dark:opacity-20 [background:radial-gradient(125%_125%_at_50%_10%,transparent_40%,#3b82f6_100%)]" />
       
+
+
       <Link
         href="/"
-        className="absolute left-6 top-6 z-10"
+        className="group fixed left-4 top-2 z-50 flex h-10 w-10 items-center justify-center rounded-full bg-background/80 backdrop-blur-md border border-border shadow-sm transition-all hover:bg-background hover:border-blue-200 hover:text-blue-600 hover:shadow-md md:left-8 md:top-4"
+        title="Back to Home"
       >
-        <Button variant="ghost" size="sm" className="rounded-full">
-          ← Back
-        </Button>
+        <ArrowLeft className="h-5 w-5 transition-transform group-hover:-translate-x-1" />
       </Link>
 
       <div className="w-full max-w-md animate-fade-in">
         <div className="glass rounded-[2rem] p-8 md:p-12 shadow-2xl">
           <div className="mb-10 flex flex-col items-center text-center">
-            <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-blue-600 p-2 shadow-lg shadow-blue-200">
-               <Image src="/logo.png" alt="Hostel Sync" width={48} height={48} className="object-contain" />
-            </div>
+            <Logo size={64} showText={false} className="mb-4 shadow-lg shadow-blue-200 rounded-full" />
             <h1 className="font-display text-3xl font-bold tracking-tight text-foreground">Welcome back</h1>
             <p className="mt-2 text-muted">Sign in to manage your hostel requests</p>
           </div>
