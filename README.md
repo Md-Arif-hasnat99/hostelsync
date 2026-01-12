@@ -5,6 +5,8 @@
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind%20CSS-v4-38bdf8?style=for-the-badge&logo=tailwind-css)](https://tailwindcss.com/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-Ready-blue?style=for-the-badge&logo=typescript)](https://www.typescriptlang.org/)
 
+![HostelSync Preview](public/landing-preview.png)
+
 **HostelSync** is a high-performance, enterprise-grade management portal designed to bridge the gap between students and hostel administration. Built with an obsession for speed, modern aesthetics, and real-time synchronization.
 
 ---
