@@ -1,23 +1,16 @@
 import { redirect } from "next/navigation";
-import { auth } from "@clerk/nextjs/server";
-import { createServiceClient } from "@/lib/supabase-server";
+import { getMyProfile } from "@/app/actions/complaints";
 
 // Server component that reads the user's role from profiles and redirects accordingly.
+// Utilizes getMyProfile which automatically handles missing profiles for newly registered users.
 export default async function DashboardPage() {
-  const { userId } = await auth();
+  const profile = await getMyProfile();
 
-  if (!userId) {
+  if (!profile) {
     redirect("/sign-in");
   }
 
-  const db = createServiceClient();
-  const { data: profile } = await db
-    .from("profiles")
-    .select("role")
-    .eq("id", userId)
-    .single();
-
-  if (profile?.role === "admin") {
+  if (profile.role === "admin") {
     redirect("/dashboard/admin");
   }
 

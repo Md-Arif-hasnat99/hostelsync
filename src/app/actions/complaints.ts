@@ -1,6 +1,6 @@
 "use server";
 
-import { auth } from "@clerk/nextjs/server";
+import { auth, currentUser } from "@clerk/nextjs/server";
 import { createServiceClient } from "@/lib/supabase-server";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -37,9 +37,38 @@ export async function getMyProfile(): Promise<Profile | null> {
     .eq("id", userId)
     .single();
 
-  if (error) {
-    console.error("getMyProfile error:", error.message);
-    return null;
+  if (error || !data) {
+    // Auto-create profile row if it doesn't exist yet (handles local development/webhook delay)
+    try {
+      const user = await currentUser();
+      if (!user) return null;
+
+      const fullName = [user.firstName, user.lastName].filter(Boolean).join(" ") || null;
+      const hostel = (user.unsafeMetadata?.hostel as string) || null;
+      const room = (user.unsafeMetadata?.room as string) || null;
+      const role = (user.unsafeMetadata?.role as "student" | "admin") || "student";
+
+      const { data: newProfile, error: insertError } = await db
+        .from("profiles")
+        .insert({
+          id: userId,
+          full_name: fullName,
+          hostel,
+          room,
+          role,
+        })
+        .select("id, role, full_name, hostel, room")
+        .single();
+
+      if (insertError) {
+        console.error("Auto-creation of profile failed:", insertError.message);
+        return null;
+      }
+      return newProfile as Profile;
+    } catch (e) {
+      console.error("Failed to query Clerk currentUser or create profile:", e);
+      return null;
+    }
   }
   return data as Profile;
 }
