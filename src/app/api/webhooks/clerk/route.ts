@@ -39,13 +39,14 @@ export async function POST(req: Request) {
     return new Response("Invalid signature", { status: 400 });
   }
 
-  // Handle new user creation — insert profile with role: 'student' by default
+  // Handle new user creation — insert profile
   if (evt.type === "user.created") {
     const { id, first_name, last_name, unsafe_metadata } = evt.data;
 
     const fullName = [first_name, last_name].filter(Boolean).join(" ") || null;
     const hostel = (unsafe_metadata?.hostel as string) || null;
     const room = (unsafe_metadata?.room as string) || null;
+    const role = (unsafe_metadata?.role as string) || "student";
 
     const supabase = createServiceClient();
 
@@ -54,7 +55,7 @@ export async function POST(req: Request) {
       full_name: fullName,
       hostel,
       room,
-      role: "student", // Always student — admin role is set manually in DB
+      role,            // Extracted from Clerk unsafeMetadata
     });
 
     if (error) {

@@ -1,8 +1,13 @@
+"use client";
+
 import Link from "next/link";
+import { useState } from "react";
 import { SignUp } from "@clerk/nextjs";
 import { Logo } from "@/components/Logo";
 
 export default function SignUpPage() {
+  const [role, setRole] = useState<"student" | "admin">("student");
+
   return (
     <div className="min-h-screen bg-background flex flex-col">
 
@@ -25,7 +30,7 @@ export default function SignUpPage() {
       {/* Form area */}
       <div className="flex flex-1 items-start justify-center px-4 pt-14 pb-12">
         <div className="w-full max-w-sm">
-          <div className="mb-8">
+          <div className="mb-6">
             <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-[#8B2326] mb-2">
               New Account Registration
             </p>
@@ -33,11 +38,38 @@ export default function SignUpPage() {
               Create Account
             </h1>
             <p className="mt-1.5 text-[13px] text-muted">
-              Register to file and track hostel complaints
+              Select your registration role below to begin
             </p>
           </div>
 
+          {/* Institutional Ledger Style Toggle */}
+          <div className="flex border border-border rounded-[2px] overflow-hidden mb-6 p-0.5 bg-background">
+            <button
+              type="button"
+              onClick={() => setRole("student")}
+              className={`flex-1 py-2 text-center font-mono text-[10px] uppercase tracking-widest transition-all ${
+                role === "student"
+                  ? "bg-foreground text-background font-bold"
+                  : "text-muted hover:text-foreground"
+              }`}
+            >
+              Student
+            </button>
+            <button
+              type="button"
+              onClick={() => setRole("admin")}
+              className={`flex-1 py-2 text-center font-mono text-[10px] uppercase tracking-widest transition-all ${
+                role === "admin"
+                  ? "bg-foreground text-background font-bold"
+                  : "text-muted hover:text-foreground"
+              }`}
+            >
+              Warden / Admin
+            </button>
+          </div>
+
           <SignUp
+            unsafeMetadata={{ role }}
             appearance={{
               elements: {
                 rootBox: "w-full",
