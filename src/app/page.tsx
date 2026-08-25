@@ -53,6 +53,8 @@ export default function Home() {
 
           <nav className="hidden md:flex items-center gap-7 text-[13px] font-medium text-muted">
             <Link href="#how-it-works" className="hover:text-foreground transition-colors">How it works</Link>
+            <Link href="/privacy" className="hover:text-foreground transition-colors">Privacy</Link>
+            <Link href="/terms" className="hover:text-foreground transition-colors">Terms</Link>
             <div className="h-4 w-px bg-border" />
             {mounted && (
               <button
@@ -87,6 +89,8 @@ export default function Home() {
           <div className="md:hidden border-t border-border bg-background animate-fade-in">
             <nav className="flex flex-col p-5 gap-4 text-sm font-medium">
               <Link href="#how-it-works" onClick={() => setShowMobileMenu(false)} className="text-muted hover:text-foreground">How it works</Link>
+              <Link href="/privacy" onClick={() => setShowMobileMenu(false)} className="text-muted hover:text-foreground">Privacy Policy</Link>
+              <Link href="/terms" onClick={() => setShowMobileMenu(false)} className="text-muted hover:text-foreground">Terms & Conditions</Link>
               <div className="h-px bg-border" />
               <Link href="/auth/login" onClick={() => setShowMobileMenu(false)}>Log In</Link>
               <Button asChild variant="outline" size="sm" className="w-full">
@@ -261,9 +265,9 @@ export default function Home() {
             </span>
           </div>
           <div className="flex gap-6 text-[12px] text-muted font-medium">
-            <Link href="#" className="hover:text-foreground transition-colors">Privacy Policy</Link>
-            <Link href="#" className="hover:text-foreground transition-colors">Terms of Service</Link>
-            <Link href="#" className="hover:text-foreground transition-colors">Contact Warden</Link>
+            <Link href="/privacy" className="hover:text-foreground transition-colors">Privacy Policy</Link>
+            <Link href="/terms" className="hover:text-foreground transition-colors">Terms of Service</Link>
+            <a href="mailto:warden@hostelsync.edu?subject=HostelSync%20Support%20Request&body=Dear%20Warden%2C%0A%0AI%20am%20writing%20to%20you%20regarding..." className="hover:text-foreground transition-colors">Contact Warden</a>
           </div>
           <p className="font-mono text-[11px] text-muted">
             © 2026 HostelSync
