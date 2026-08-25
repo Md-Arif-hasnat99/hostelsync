@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useUser, useClerk } from "@clerk/nextjs";
 import {
   Search, LogOut, Plus, LayoutDashboard, History,
   Settings, ChevronRight, Sun, Moon, Menu, X
@@ -18,6 +19,12 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  getMyComplaints,
+  getMyProfile,
+  submitComplaint,
+  type Profile,
+} from "@/app/actions/complaints";
 
 const formSchema = z.object({
   title: z.string().min(4, "Add a short title"),
@@ -26,16 +33,7 @@ const formSchema = z.object({
   priority: z.enum(["normal", "urgent"]),
 });
 
-const passwordSchema = z.object({
-  password: z.string().min(6, "Password must be at least 6 characters"),
-  confirmPassword: z.string(),
-}).refine((data) => data.password === data.confirmPassword, {
-  message: "Passwords do not match",
-  path: ["confirmPassword"],
-});
-
 type FormData = z.infer<typeof formSchema>;
-type PasswordFormData = z.infer<typeof passwordSchema>;
 
 type ComplaintRow = {
   id: string;
@@ -46,33 +44,6 @@ type ComplaintRow = {
   date: string;
 };
 
-const seedComplaints: ComplaintRow[] = [
-  {
-    id: "HC-1021",
-    title: "Water supply interruption",
-    category: "Water Supply",
-    status: "pending",
-    priority: "urgent",
-    date: "Dec 20, 2025",
-  },
-  {
-    id: "HC-1018",
-    title: "WiFi outage on 3rd floor",
-    category: "Internet/WiFi",
-    status: "in_progress",
-    priority: "normal",
-    date: "Dec 19, 2025",
-  },
-  {
-    id: "HC-1007",
-    title: "Mess food quality",
-    category: "Food Quality",
-    status: "resolved",
-    priority: "normal",
-    date: "Dec 18, 2025",
-  },
-];
-
 const STATUS_COLOR: Record<string, string> = {
   pending:     "warning",
   in_progress: "info",
@@ -80,6 +51,11 @@ const STATUS_COLOR: Record<string, string> = {
 };
 
 export default function StudentDashboardPage() {
+  const { user, isLoaded } = useUser();
+  const { signOut } = useClerk();
+  const router = useRouter();
+  const { theme, toggleTheme } = useTheme();
+
   const [complaints, setComplaints] = useState<ComplaintRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -90,111 +66,65 @@ export default function StudentDashboardPage() {
   const [priorityFilter, setPriorityFilter] = useState<"all" | ComplaintRow["priority"]>("all");
   const [selected, setSelected] = useState<ComplaintRow | null>(null);
   const [activeTab, setActiveTab] = useState<"overview" | "history" | "settings">("overview");
-  const [showPasswordForm, setShowPasswordForm] = useState(false);
-  const [passwordUpdating, setPasswordUpdating] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
-  const { theme, toggleTheme } = useTheme();
-  const router = useRouter();
-  const [user, setUser] = useState<any>(null);
-  const [profile, setProfile] = useState<any>(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
 
+  // Load profile + complaints via server actions
   useEffect(() => {
+    if (!isLoaded) return;
+    if (!user) { router.push("/sign-in"); return; }
+
     async function init() {
-      const { data: userData } = await supabase.auth.getUser();
-      if (!userData?.user) {
-        router.push("/auth/login");
-        return;
-      }
-      setUser(userData.user);
+      const profileData = await getMyProfile();
 
-      // Verify user profile role is student
-      const { data: profileData } = await supabase
-        .from("profiles")
-        .select("role, full_name, hostel, room")
-        .eq("id", userData.user.id)
-        .single();
-
-      if (!profileData) {
-        router.push("/auth/login");
-        return;
-      }
-
-      if (profileData.role !== "student") {
-        router.push("/dashboard/admin");
-        return;
-      }
-
+      if (!profileData) { router.push("/sign-in"); return; }
+      if (profileData.role !== "student") { router.push("/dashboard/admin"); return; }
       setProfile(profileData);
 
-      const { data, error } = await supabase
-        .from("complaints")
-        .select("id, title, category, status, priority, created_at")
-        .eq("student_id", userData.user.id)
-        .order("created_at", { ascending: false });
-
-      if (!error && data) {
-        const mapped = data.map((d: any) => ({
-          id: d.id,
-          title: d.title,
-          category: d.category,
-          status: d.status,
-          priority: d.priority,
-          date: new Date(d.created_at).toLocaleDateString(undefined, {
-            month: "short",
-            day: "numeric",
-            year: "numeric",
-          }),
-        }));
-        setComplaints(mapped);
-      }
+      const data = await getMyComplaints();
+      const mapped = data.map((d: any) => ({
+        id: d.id,
+        title: d.title,
+        category: d.category,
+        status: d.status,
+        priority: d.priority,
+        date: new Date(d.created_at).toLocaleDateString(undefined, {
+          month: "short", day: "numeric", year: "numeric",
+        }),
+      }));
+      setComplaints(mapped);
       setLoading(false);
 
+      // Realtime subscription (anon client — notification only, no data read)
       const channel = supabase
-        .channel(`complaints-student-${userData.user.id}`)
+        .channel(`complaints-student-${user!.id}`)
         .on(
           "postgres_changes",
-          {
-            event: "*",
-            schema: "public",
-            table: "complaints",
-            filter: `student_id=eq.${userData.user.id}`
-          },
+          { event: "*", schema: "public", table: "complaints", filter: `student_id=eq.${user!.id}` },
           async () => {
-            const { data: freshData } = await supabase
-              .from("complaints")
-              .select("id, title, category, status, priority, created_at")
-              .eq("student_id", userData.user.id)
-              .order("created_at", { ascending: false });
-
-            if (freshData) {
-              const updated = freshData.map((d: any) => ({
-                id: d.id,
-                title: d.title,
-                category: d.category,
-                status: d.status,
-                priority: d.priority,
-                date: new Date(d.created_at).toLocaleDateString(undefined, {
-                  month: "short",
-                  day: "numeric",
-                  year: "numeric",
-                }),
-              }));
-              setComplaints(updated);
-            }
+            const fresh = await getMyComplaints();
+            const updated = fresh.map((d: any) => ({
+              id: d.id,
+              title: d.title,
+              category: d.category,
+              status: d.status,
+              priority: d.priority,
+              date: new Date(d.created_at).toLocaleDateString(undefined, {
+                month: "short", day: "numeric", year: "numeric",
+              }),
+            }));
+            setComplaints(updated);
           }
         )
         .subscribe();
 
-      return () => {
-        supabase.removeChannel(channel);
-      };
+      return () => { supabase.removeChannel(channel); };
     }
+
     const cleanup = init();
-    return () => {
-      cleanup.then(fn => fn?.());
-    };
-  }, [router]);
+    return () => { cleanup.then(fn => fn?.()); };
+  }, [isLoaded, user, router]);
 
   const {
     register,
@@ -206,109 +136,52 @@ export default function StudentDashboardPage() {
     defaultValues: { priority: "normal" },
   });
 
-  const {
-    register: registerPassword,
-    handleSubmit: handlePasswordSubmit,
-    reset: resetPassword,
-    formState: { errors: passwordErrors },
-  } = useForm<PasswordFormData>({
-    resolver: zodResolver(passwordSchema),
-  });
-
   const onSubmit = async (values: FormData) => {
     setSubmitting(true);
     setError(null);
 
-    const { data: userData, error: userError } = await supabase.auth.getUser();
-    if (userError || !userData?.user) {
-      setError("Please sign in before raising a complaint.");
+    try {
+      const record = await submitComplaint(values);
+      const createdAt = record?.created_at ? new Date(record.created_at) : null;
+      setComplaints((prev) => [
+        {
+          id: record?.id ?? "NEW",
+          title: values.title,
+          category: values.category,
+          priority: values.priority,
+          status: "pending",
+          date: createdAt
+            ? createdAt.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })
+            : "Just now",
+        },
+        ...prev,
+      ]);
+      reset({ title: "", category: "", description: "", priority: "normal" });
+      setShowForm(false);
+    } catch (err: any) {
+      setError(err.message ?? "Could not submit complaint");
+    } finally {
       setSubmitting(false);
-      return;
     }
-
-    const { data: inserted, error: insertError } = await supabase
-      .from("complaints")
-      .insert({
-        title: values.title,
-        category: values.category,
-        description: values.description,
-        priority: values.priority,
-        status: "pending",
-        student_id: userData.user.id,
-      })
-      .select("id, created_at")
-      .limit(1);
-
-    if (insertError) {
-      setError(insertError.message ?? "Could not submit complaint");
-      setSubmitting(false);
-      return;
-    }
-
-    const record = inserted?.[0];
-    const createdAt = record?.created_at ? new Date(record.created_at) : null;
-
-    setComplaints((prev) => [
-      {
-        id: record?.id ?? "NEW",
-        title: values.title,
-        category: values.category,
-        priority: values.priority,
-        status: "pending",
-        date: createdAt
-          ? createdAt.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })
-          : "Just now",
-      },
-      ...prev,
-    ]);
-
-    reset({ title: "", category: "", description: "", priority: "normal" });
-    setShowForm(false);
-    setSubmitting(false);
-  };
-
-  const onUpdatePassword = async (values: PasswordFormData) => {
-    setPasswordUpdating(true);
-    setError(null);
-
-    const { error: updateError } = await supabase.auth.updateUser({
-      password: values.password,
-    });
-
-    if (updateError) {
-      setError(updateError.message);
-      setPasswordUpdating(false);
-      return;
-    }
-
-    resetPassword();
-    setShowPasswordForm(false);
-    setPasswordUpdating(false);
-    alert("Password updated successfully!");
   };
 
   const handleSignOut = async () => {
     setSigningOut(true);
-    await supabase.auth.signOut();
-    router.push("/auth/login");
+    await signOut({ redirectUrl: "/sign-in" });
   };
 
   const filteredComplaints = useMemo(() => {
     return complaints.filter((c) => {
-      const matchesSearch = `${c.title} ${c.category} ${c.id}`
-        .toLowerCase()
-        .includes(search.trim().toLowerCase());
+      const matchesSearch = `${c.title} ${c.category} ${c.id}`.toLowerCase().includes(search.trim().toLowerCase());
       const matchesStatus = statusFilter === "all" || c.status === statusFilter;
       const matchesPriority = priorityFilter === "all" || c.priority === priorityFilter;
       return matchesSearch && matchesStatus && matchesPriority;
     });
   }, [complaints, search, statusFilter, priorityFilter]);
 
-  const userName = profile?.full_name || user?.user_metadata?.name || "Student";
+  const userName = profile?.full_name || user?.firstName || "Student";
   const hostelInfo = profile?.hostel
     ? `${profile.hostel}${profile.room ? `, Rm ${profile.room}` : ""}`
-    : user?.user_metadata?.hostel
-    ? `${user.user_metadata.hostel}${user.user_metadata.room ? `, Rm ${user.user_metadata.room}` : ""}`
     : "Hostel Resident";
 
   return (
@@ -457,7 +330,6 @@ export default function StudentDashboardPage() {
 
                   {/* Ledger list */}
                   <div className="border border-border">
-                    {/* Column header */}
                     <div className="grid grid-cols-[4rem_1fr_auto_auto] gap-4 px-4 py-2 border-b border-border bg-background">
                       <span className="font-mono text-[9px] uppercase tracking-widest text-muted">Ref No.</span>
                       <span className="font-mono text-[9px] uppercase tracking-widest text-muted">Issue / Category</span>
@@ -558,56 +430,26 @@ export default function StudentDashboardPage() {
                       <div className="grid gap-4 md:grid-cols-2">
                         <div>
                           <p className="font-mono text-[9px] uppercase tracking-widest text-muted mb-1">Email</p>
-                          <p className="text-[13px] font-medium text-foreground">{user?.email}</p>
+                          <p className="text-[13px] font-medium text-foreground">
+                            {user?.primaryEmailAddress?.emailAddress}
+                          </p>
                         </div>
                         <div>
                           <p className="font-mono text-[9px] uppercase tracking-widest text-muted mb-1">Account Type</p>
                           <Badge color="neutral">Student</Badge>
                         </div>
                         <div>
-                          <p className="font-mono text-[9px] uppercase tracking-widest text-muted mb-1">Last Login</p>
-                          <p className="font-mono text-[12px] text-foreground">
-                            {user?.last_sign_in_at ? new Date(user.last_sign_in_at).toLocaleString() : 'This session'}
-                          </p>
+                          <p className="font-mono text-[9px] uppercase tracking-widest text-muted mb-1">Hostel / Room</p>
+                          <p className="font-mono text-[12px] text-foreground">{hostelInfo}</p>
                         </div>
                       </div>
                       <div className="pt-3 border-t border-border">
-                        <Button variant="outline" size="sm" onClick={() => setShowPasswordForm(true)}>
-                          Update Password
-                        </Button>
+                        <p className="font-mono text-[11px] text-muted">
+                          To update your password, visit your account settings via the user menu.
+                        </p>
                       </div>
                     </CardContent>
                   </Card>
-
-                  {showPasswordForm && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#1C1917]/40 p-4">
-                      <Card className="w-full max-w-sm bg-card animate-slide-up">
-                        <CardHeader>
-                          <h2 className="font-bold text-[15px] text-foreground">Update Password</h2>
-                          <p className="text-[12px] text-muted">Enter a new secure password</p>
-                        </CardHeader>
-                        <CardContent>
-                          <form className="grid gap-4" onSubmit={handlePasswordSubmit(onUpdatePassword)}>
-                            <div className="space-y-1">
-                              <Input label="New Password" type="password" placeholder="••••••••" {...registerPassword("password")} />
-                              {passwordErrors.password && <p className="font-mono text-[11px] text-[#8B2326]">{passwordErrors.password.message}</p>}
-                            </div>
-                            <div className="space-y-1">
-                              <Input label="Confirm Password" type="password" placeholder="••••••••" {...registerPassword("confirmPassword")} />
-                              {passwordErrors.confirmPassword && <p className="font-mono text-[11px] text-[#8B2326]">{passwordErrors.confirmPassword.message}</p>}
-                            </div>
-                            {error && <p className="font-mono text-[11px] text-[#8B2326]">{error}</p>}
-                            <div className="flex items-center justify-end gap-3 pt-2">
-                              <Button type="button" variant="ghost" size="sm" onClick={() => setShowPasswordForm(false)} disabled={passwordUpdating}>Cancel</Button>
-                              <Button type="submit" size="sm" disabled={passwordUpdating}>
-                                {passwordUpdating ? "Updating…" : "Update"}
-                              </Button>
-                            </div>
-                          </form>
-                        </CardContent>
-                      </Card>
-                    </div>
-                  )}
                 </div>
               )}
 
@@ -705,15 +547,10 @@ export default function StudentDashboardPage() {
             </CardHeader>
             <CardContent>
               <div className="space-y-5">
-                {/* Status timeline */}
                 <div>
                   <p className="font-mono text-[9px] uppercase tracking-widest text-muted mb-3">Status Progression</p>
                   <div className="space-y-0">
-                    <TimelineStep
-                      label="Complaint Filed"
-                      sub={selected.date}
-                      state="done"
-                    />
+                    <TimelineStep label="Complaint Filed" sub={selected.date} state="done" />
                     <TimelineStep
                       label="Under Review"
                       sub={selected.status === 'pending' ? 'Awaiting assignment' : 'Reviewed'}
@@ -817,14 +654,12 @@ function TimelineStep({
 
   return (
     <div className="flex gap-3">
-      {/* Left rail */}
       <div className="flex flex-col items-center">
         <span className={`font-mono text-[14px] leading-none select-none ${markerColor}`}>
           {state === 'done' ? '◆' : state === 'active' ? '◇' : '·'}
         </span>
         {!isLast && <div className="w-px flex-1 min-h-[18px] bg-border mt-0.5" />}
       </div>
-      {/* Content */}
       <div className="pb-3">
         <p className={`text-[13px] font-medium ${state === 'idle' ? 'text-muted' : 'text-foreground'}`}>{label}</p>
         <p className="font-mono text-[10px] text-muted">{sub}</p>

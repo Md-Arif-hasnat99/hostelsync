@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useUser, useClerk } from "@clerk/nextjs";
 import { Badge } from "@/components/ui/badge";
 import { Logo } from "@/components/Logo";
 import { Button } from "@/components/ui/button";
@@ -19,21 +20,17 @@ import {
 import { supabase } from "@/lib/supabase";
 import {
   Search, LogOut, LayoutDashboard, Settings, Download, RefreshCcw,
-  TrendingUp, Users, AlertCircle, History, Plus, Sun, Moon, Menu, X, Zap
+  Users, History, Plus, Sun, Moon, Menu, X, Zap
 } from "lucide-react";
 import { useTheme } from "@/components/theme-provider";
+import {
+  getAllComplaints,
+  updateComplaintStatus,
+  triagePending,
+  type ComplaintRow,
+} from "@/app/actions/complaints";
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip, Legend);
-
-type ComplaintRow = {
-  id: string;
-  title: string;
-  category: string;
-  status: "pending" | "in_progress" | "resolved";
-  priority: "normal" | "urgent";
-  student_id: string | null;
-  created_at: string | null;
-};
 
 // Chart: graphite palette — no blue
 const chartData = {
@@ -54,15 +51,24 @@ const chartOptions = {
   maintainAspectRatio: false,
   plugins: { legend: { display: false } },
   scales: {
-    x: { grid: { display: false }, ticks: { font: { family: "monospace", size: 10 }, color: "#78716C" } },
+    x: {
+      grid: { display: false },
+      ticks: { font: { family: "monospace", size: 10 }, color: "#78716C" }
+    },
     y: {
-      grid: { color: "rgba(214,207,196,0.5)" },
+      grid: { color: "rgba(28, 25, 23, 0.08)" },
       ticks: { precision: 0, font: { family: "monospace", size: 10 }, color: "#78716C" }
     }
   }
 };
 
 export default function AdminDashboardPage() {
+  const { user, isLoaded } = useUser();
+  const { signOut } = useClerk();
+  const router = useRouter();
+  const { theme, toggleTheme } = useTheme();
+  const queryClient = useQueryClient();
+
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [signingOut, setSigningOut] = useState(false);
   const [updating, setUpdating] = useState(false);
@@ -74,38 +80,19 @@ export default function AdminDashboardPage() {
   const [showAddCategory, setShowAddCategory] = useState(false);
   const [newCategory, setNewCategory] = useState("");
   const [showManageRoles, setShowManageRoles] = useState(false);
-  const [admins, setAdmins] = useState([
+  const [admins] = useState([
     { name: "R. Krishnamurthy", role: "Chief Warden", email: "warden@hostelsync.edu" },
     { name: "K. Desai", role: "Hostel Manager", email: "manager@hostelsync.edu" },
   ]);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
-  const { theme, toggleTheme } = useTheme();
-  const router = useRouter();
-  const queryClient = useQueryClient();
 
-  // Auth check
+  // Auth guard: verify user is an admin via server action
   useEffect(() => {
-    async function checkAuth() {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        router.push("/auth/login");
-        return;
-      }
+    if (!isLoaded) return;
+    if (!user) { router.push("/sign-in"); return; }
+  }, [isLoaded, user, router]);
 
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("role")
-        .eq("id", user.id)
-        .single();
-
-      if (profile?.role !== "admin") {
-        router.push("/dashboard/student");
-      }
-    }
-    checkAuth();
-  }, [router]);
-
-  // Real-time sync
+  // Realtime subscription (anon client — notification only, triggers React Query refetch)
   useEffect(() => {
     const channel = supabase
       .channel("complaints-live")
@@ -125,19 +112,8 @@ export default function AdminDashboardPage() {
         if (status === "CHANNEL_ERROR") setRealtimeStatus("error");
       });
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    return () => { supabase.removeChannel(channel); };
   }, [queryClient]);
-
-  const fetchComplaints = async () => {
-    const { data, error } = await supabase
-      .from("complaints")
-      .select("id,title,category,status,priority,created_at,student_id")
-      .order("created_at", { ascending: false });
-    if (error) throw new Error(error.message);
-    return data ?? [];
-  };
 
   const {
     data: complaints = [],
@@ -147,9 +123,10 @@ export default function AdminDashboardPage() {
     refetch,
   } = useQuery<ComplaintRow[]>({
     queryKey: ["complaints"],
-    queryFn: fetchComplaints,
+    queryFn: getAllComplaints,
     staleTime: 10_000,
-    refetchOnWindowFocus: true
+    refetchOnWindowFocus: true,
+    enabled: !!user,
   });
 
   const summary = useMemo(() => {
@@ -178,11 +155,10 @@ export default function AdminDashboardPage() {
 
   const handleSignOut = async () => {
     setSigningOut(true);
-    await supabase.auth.signOut();
-    router.push("/auth/login");
+    await signOut({ redirectUrl: "/sign-in" });
   };
 
-  const handleExport = async () => {
+  const handleExport = () => {
     if (!complaints.length) return;
     const header = ["id", "title", "category", "status", "priority", "created_at"];
     const rows = complaints.map((c) => [c.id, c.title, c.category, c.status, c.priority, c.created_at ?? ""]);
@@ -198,25 +174,29 @@ export default function AdminDashboardPage() {
 
   const handleUpdateStatus = async () => {
     setUpdating(true);
-    const { error: updateError } = await supabase.from("complaints").update({ status: "in_progress" }).eq("status", "pending");
-    if (!updateError) setStatusMessage("Pending complaints moved to In Progress");
-    await queryClient.invalidateQueries({ queryKey: ["complaints"] });
-    setUpdating(false);
+    try {
+      await triagePending();
+      setStatusMessage("Pending complaints moved to In Progress");
+      await queryClient.invalidateQueries({ queryKey: ["complaints"] });
+    } catch (e: any) {
+      setStatusMessage(e.message);
+    } finally {
+      setUpdating(false);
+    }
   };
 
   const handleStatusUpdate = async (id: string, status: ComplaintRow["status"]) => {
     setUpdating(true);
     setStatusMessage(null);
-    const { error: updateError } = await supabase.from("complaints").update({ status }).eq("id", id);
-    if (updateError) {
-      setStatusMessage(updateError.message);
+    try {
+      await updateComplaintStatus(id, status);
+      setStatusMessage(`Complaint ${id.slice(0, 8)} → ${status.replace("_", " ")}`);
+      await queryClient.invalidateQueries({ queryKey: ["complaints"] });
+    } catch (e: any) {
+      setStatusMessage(e.message);
+    } finally {
       setUpdating(false);
-      return;
     }
-    setStatusMessage(`Complaint ${id.slice(0, 8)} → ${status.replace("_", " ")}`);
-    await queryClient.invalidateQueries({ queryKey: ["complaints"] });
-    await refetch();
-    setUpdating(false);
   };
 
   return (
@@ -251,7 +231,9 @@ export default function AdminDashboardPage() {
 
         <div className="border-t border-border px-4 py-3">
           <p className="font-mono text-[10px] uppercase tracking-widest text-muted">Admin Portal</p>
-          <p className="text-[12px] font-medium text-foreground mt-0.5">Warden Access</p>
+          <p className="text-[12px] font-medium text-foreground mt-0.5">
+            {user?.firstName ?? "Warden"} {user?.lastName ?? ""}
+          </p>
         </div>
       </aside>
 
@@ -357,7 +339,6 @@ export default function AdminDashboardPage() {
 
                   {/* Complaint table — 2/3 */}
                   <div className="lg:col-span-2 flex flex-col gap-3">
-                    {/* Filter bar */}
                     <div className="flex items-center justify-between border border-border bg-card px-4 py-3">
                       <span className="font-mono text-[10px] uppercase tracking-widest text-muted">Status Filter:</span>
                       <select
@@ -372,7 +353,6 @@ export default function AdminDashboardPage() {
                       </select>
                     </div>
 
-                    {/* Register table */}
                     <div className="border border-border overflow-hidden">
                       <div className="overflow-x-auto">
                         <table className="w-full text-left text-sm border-collapse">
@@ -387,7 +367,7 @@ export default function AdminDashboardPage() {
                           </thead>
                           <tbody>
                             {filteredComplaints.length > 0 ? (
-                              filteredComplaints.map((c, i) => (
+                              filteredComplaints.map((c) => (
                                 <tr
                                   key={c.id}
                                   className={`border-b border-border hover:bg-[#EDE8DF]/50 dark:hover:bg-[#3A2F28]/30 transition-colors ${
@@ -409,7 +389,7 @@ export default function AdminDashboardPage() {
                                   </td>
                                   <td className="px-4 py-3 hidden md:table-cell">
                                     <p className="font-mono text-[10px] text-muted">
-                                      {c.student_id ? `…${c.student_id.slice(-6)}` : 'Unknown'}
+                                      {c.student_id ? `…${c.student_id.slice(-8)}` : 'Unknown'}
                                     </p>
                                   </td>
                                   <td className="px-4 py-3">
@@ -454,7 +434,6 @@ export default function AdminDashboardPage() {
 
                   {/* Right column — Analytics & status */}
                   <div className="flex flex-col gap-5">
-                    {/* Category chart */}
                     <Card>
                       <CardHeader>
                         <p className="font-mono text-[9px] uppercase tracking-widest text-muted">Category Mix</p>
@@ -467,7 +446,6 @@ export default function AdminDashboardPage() {
                       </CardContent>
                     </Card>
 
-                    {/* Sync status panel */}
                     <Card>
                       <CardHeader>
                         <p className="font-mono text-[9px] uppercase tracking-widest text-muted">System</p>

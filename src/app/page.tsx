@@ -65,9 +65,9 @@ export default function Home() {
                 {theme === "light" ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
               </button>
             )}
-            <Link href="/auth/login" className="hover:text-foreground transition-colors">Log In</Link>
+            <Link href="/sign-in" className="hover:text-foreground transition-colors">Log In</Link>
             <Button asChild size="sm" variant="outline">
-              <Link href="/auth/register">Register</Link>
+              <Link href="/sign-up">Register</Link>
             </Button>
           </nav>
 
@@ -92,9 +92,9 @@ export default function Home() {
               <Link href="/privacy" onClick={() => setShowMobileMenu(false)} className="text-muted hover:text-foreground">Privacy Policy</Link>
               <Link href="/terms" onClick={() => setShowMobileMenu(false)} className="text-muted hover:text-foreground">Terms & Conditions</Link>
               <div className="h-px bg-border" />
-              <Link href="/auth/login" onClick={() => setShowMobileMenu(false)}>Log In</Link>
+              <Link href="/sign-in" onClick={() => setShowMobileMenu(false)}>Log In</Link>
               <Button asChild variant="outline" size="sm" className="w-full">
-                <Link href="/auth/register" onClick={() => setShowMobileMenu(false)}>Register</Link>
+                <Link href="/sign-up" onClick={() => setShowMobileMenu(false)}>Register</Link>
               </Button>
             </nav>
           </div>
@@ -125,10 +125,10 @@ export default function Home() {
 
               <div className="flex flex-col gap-3 sm:flex-row">
                 <Button asChild size="md" variant="primary">
-                  <Link href="/auth/register">Open Student Account</Link>
+                  <Link href="/sign-up">Open Student Account</Link>
                 </Button>
                 <Button asChild size="md" variant="outline">
-                  <Link href="/auth/login?role=admin">Admin Portal →</Link>
+                  <Link href="/sign-in">Admin Portal →</Link>
                 </Button>
               </div>
 
