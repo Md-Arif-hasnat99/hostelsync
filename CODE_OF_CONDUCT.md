@@ -38,4 +38,4 @@ This Code of Conduct applies within all community spaces, and also applies when 
 
 Instances of abusive, harassing, or otherwise unacceptable behavior may be reported to the community leaders responsible for enforcement at **warden@hostelsync.edu**. All complaints will be reviewed and investigated promptly and fairly.
 
-Community leaders are obligated to respect the privacy and security of the reporter of any incident.
+Community leaders are obligated to maintain strict confidentiality regarding the identity of the reporter and the contents of any report. Disclosure of this information is strictly prohibited unless explicitly consented to by the reporter, required by legal obligations, or strictly necessary to execute immediate safety actions.
