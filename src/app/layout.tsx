@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter, Outfit } from "next/font/google";
+import { Inter, Outfit, IBM_Plex_Mono } from "next/font/google";
 import { Providers } from "./providers";
 import "./globals.css";
 
@@ -15,9 +15,16 @@ const outfit = Outfit({
   display: "swap",
 });
 
+const ibmPlexMono = IBM_Plex_Mono({
+  variable: "--font-ibm-plex-mono",
+  subsets: ["latin"],
+  weight: ["400", "500", "700"],
+  display: "swap",
+});
+
 export const metadata: Metadata = {
-  title: "Hostel Sync",
-  description: "Hostel Sync – connect, resolve, and track hostel issues effortlessly.",
+  title: "HostelSync — Complaint Register",
+  description: "HostelSync: file, track, and resolve hostel complaints through a structured register system.",
   icons: {
     icon: "/icon.svg",
     shortcut: "/icon.svg",
@@ -33,7 +40,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${inter.variable} ${outfit.variable} bg-background text-foreground antialiased`}
+        className={`${inter.variable} ${outfit.variable} ${ibmPlexMono.variable} bg-background text-foreground antialiased`}
       >
         <Providers>{children}</Providers>
       </body>

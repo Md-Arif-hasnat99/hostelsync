@@ -1,38 +1,33 @@
 "use client";
 
-import { ArrowRight, ShieldCheck, Sparkles, TrendingUp, CheckCircle2, MessageSquare, Zap } from "lucide-react";
-import Image from "next/image";
 import Link from "next/link";
-import { Badge } from "@/components/ui/badge";
 import { Logo } from "@/components/Logo";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "@/components/theme-provider";
 import { Sun, Moon, Menu, X } from "lucide-react";
 import { useState, useEffect } from "react";
 
-const features = [
-  {
-    title: "Quick Reporting",
-    description: "Submit hostel complaints in under 60 seconds with guided fields.",
-    icon: Zap,
-    color: "text-amber-500",
-    bg: "bg-amber-50",
-  },
-  {
-    title: "Real-Time Tracking",
-    description: "See live status, admin updates, and timestamps at every step.",
-    icon: MessageSquare,
-    color: "text-blue-500",
-    bg: "bg-blue-50",
-  },
-  {
-    title: "Fast Resolution",
-    description: "Structured workflows keep admins accountable and students informed.",
-    icon: CheckCircle2,
-    color: "text-emerald-500",
-    bg: "bg-emerald-50",
-  },
+// Static ledger entries — realistic hostel complaint data
+const sampleEntries = [
+  { id: "HC-2847", date: "25 Aug", category: "Water Supply",  title: "No hot water in Block C showers",      status: "pending",     priority: "urgent" },
+  { id: "HC-2846", date: "25 Aug", category: "Internet/WiFi",  title: "Router offline — Floor 3, Block A",   status: "in_progress", priority: "normal" },
+  { id: "HC-2844", date: "24 Aug", category: "Electricity",    title: "Corridor light blown — B-Wing stairwell", status: "in_progress", priority: "urgent" },
+  { id: "HC-2841", date: "24 Aug", category: "Cleanliness",    title: "Common washroom not cleaned",          status: "pending",     priority: "normal" },
+  { id: "HC-2839", date: "23 Aug", category: "Maintenance",    title: "Broken latch — Room 214, Block B",    status: "resolved",    priority: "normal" },
+  { id: "HC-2835", date: "23 Aug", category: "Food Quality",   title: "Mess dinner — undercooked rice (again)", status: "resolved", priority: "normal" },
 ];
+
+const statusLabel: Record<string, string> = {
+  pending: "PENDING",
+  in_progress: "IN PROG.",
+  resolved: "RESOLVED",
+};
+
+const statusColor: Record<string, string> = {
+  pending:     "text-[#92400E] border-[#92400E]",
+  in_progress: "text-[#44403C] border-[#44403C]",
+  resolved:    "text-[#14532D] border-[#14532D]",
+};
 
 export default function Home() {
   const { theme, toggleTheme } = useTheme();
@@ -44,74 +39,58 @@ export default function Home() {
   }, []);
 
   return (
-    <div className="min-h-screen selection:bg-blue-100 selection:text-blue-700 bg-background transition-colors duration-300">
-      {/* Header */}
-      <header className={`sticky top-0 z-[60] h-[72px] transition-all ${showMobileMenu ? 'bg-background border-b border-border' : 'glass'}`}>
-        <div className="mx-auto flex h-full max-w-7xl items-center justify-between px-4 md:px-6">
-          <div className="flex items-center gap-3 group cursor-pointer">
-            <div className="transition-transform group-hover:rotate-12">
-               <Logo size={40} showText={false} />
-            </div>
-            <span className="font-display text-xl font-bold tracking-tight text-foreground dark:text-white">
-              Hostel<span className="text-blue-600">Sync</span>
+    <div className="min-h-screen bg-background text-foreground">
+
+      {/* ── Header ─────────────────────────────────────────── */}
+      <header className="sticky top-0 z-50 bg-background border-b border-border">
+        <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-5 md:px-8">
+          <div className="flex items-center gap-2">
+            <Logo size={28} showText={false} />
+            <span className="font-mono text-sm font-bold tracking-widest uppercase text-foreground">
+              Hostel<span className="text-[#8B2326]">Sync</span>
             </span>
           </div>
-          <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-slate-600 dark:text-slate-400">
-            <Link href="#features" className="hover:text-blue-600 transition-colors">Features</Link>
-            <Link href="#how" className="hover:text-blue-600 transition-colors">How it works</Link>
-            <div className="h-4 w-px bg-slate-200" />
-            
+
+          <nav className="hidden md:flex items-center gap-7 text-[13px] font-medium text-muted">
+            <Link href="#how-it-works" className="hover:text-foreground transition-colors">How it works</Link>
+            <div className="h-4 w-px bg-border" />
             {mounted && (
-              <button 
+              <button
                 onClick={toggleTheme}
-                className="rounded-full p-2 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                className="p-1.5 text-muted hover:text-foreground transition-colors"
                 title={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
               >
-                {theme === "light" ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
+                {theme === "light" ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
               </button>
             )}
-
-            <Link href="/auth/login" className="hover:text-blue-600 transition-colors">Login</Link>
-            <Button asChild className="rounded-full px-6">
-              <Link href="/auth/register">Get Started</Link>
+            <Link href="/auth/login" className="hover:text-foreground transition-colors">Log In</Link>
+            <Button asChild size="sm" variant="outline">
+              <Link href="/auth/register">Register</Link>
             </Button>
           </nav>
-          
-          <div className="flex items-center gap-4 md:hidden">
+
+          {/* Mobile header controls */}
+          <div className="flex items-center gap-3 md:hidden">
             {mounted && (
-              <button 
-                onClick={toggleTheme}
-                className="rounded-full p-2 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-              >
-                {theme === "light" ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
+              <button onClick={toggleTheme} className="p-1.5 text-muted hover:text-foreground">
+                {theme === "light" ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
               </button>
             )}
-            <button 
-              onClick={() => setShowMobileMenu(!showMobileMenu)}
-              className="p-2 text-foreground"
-            >
-              {showMobileMenu ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+            <button onClick={() => setShowMobileMenu(!showMobileMenu)} className="p-1.5 text-foreground">
+              {showMobileMenu ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
             </button>
           </div>
         </div>
 
-        {/* Mobile Menu Overlay */}
+        {/* Mobile menu */}
         {showMobileMenu && (
-          <div className="fixed inset-x-0 bottom-0 top-[72px] z-[100] md:hidden">
-            <div className="absolute inset-0 bg-background" />
-            <nav className="relative flex h-full flex-col gap-8 p-8 text-xl font-bold border-t border-border animate-slide-up">
-              <Link href="#features" onClick={() => setShowMobileMenu(false)} className="flex items-center justify-between hover:text-blue-600 transition-colors">
-                <span>Features</span>
-                <ArrowRight className="h-5 w-5 opacity-50" />
-              </Link>
-              <Link href="#how" onClick={() => setShowMobileMenu(false)} className="flex items-center justify-between hover:text-blue-600 transition-colors">
-                <span>How it works</span>
-                <ArrowRight className="h-5 w-5 opacity-50" />
-              </Link>
-              <div className="h-px bg-border w-full my-2" />
-              <Link href="/auth/login" onClick={() => setShowMobileMenu(false)} className="hover:text-blue-600 transition-colors">Login</Link>
-              <Button asChild size="lg" className="rounded-xl w-full h-14 text-lg">
-                <Link href="/auth/register" onClick={() => setShowMobileMenu(false)}>Get Started</Link>
+          <div className="md:hidden border-t border-border bg-background animate-fade-in">
+            <nav className="flex flex-col p-5 gap-4 text-sm font-medium">
+              <Link href="#how-it-works" onClick={() => setShowMobileMenu(false)} className="text-muted hover:text-foreground">How it works</Link>
+              <div className="h-px bg-border" />
+              <Link href="/auth/login" onClick={() => setShowMobileMenu(false)}>Log In</Link>
+              <Button asChild variant="outline" size="sm" className="w-full">
+                <Link href="/auth/register" onClick={() => setShowMobileMenu(false)}>Register</Link>
               </Button>
             </nav>
           </div>
@@ -119,175 +98,179 @@ export default function Home() {
       </header>
 
       <main>
-        {/* Hero Section */}
-        <section className="relative overflow-hidden pt-20 pb-16 md:pt-32 md:pb-24">
-          
-          <div className="mx-auto max-w-7xl px-6">
-            <div className="flex flex-col items-center text-center animate-fade-in">
-              <Badge className="mb-6 rounded-full border-blue-100 bg-blue-50 px-4 py-1 text-blue-700">
-                ✨ Streamline your hostel life
-              </Badge>
-              <h1 className="font-display max-w-4xl text-5xl font-extrabold tracking-tight text-foreground dark:text-white md:text-7xl">
-                Hostel issues? <br />
-                <span className="text-gradient">Track them effortlessly.</span>
-              </h1>
-              <p className="mt-8 max-w-2xl text-lg leading-relaxed text-slate-600 dark:text-slate-400 md:text-xl">
-                The modern complaint portal for students and admins. Experience transparent 
-                tracking, real-time updates, and lightning-fast resolutions.
-              </p>
-              <div className="mt-10 flex flex-col items-center gap-4 sm:flex-row">
-                <Button asChild size="lg" className="h-14 rounded-full px-8 text-base shadow-lg shadow-blue-200 hover-lift active:scale-95 transition-all">
-                  <Link href="/auth/register">
-                    Start Reporting <ArrowRight className="ml-2 h-5 w-5" />
-                  </Link>
-                </Button>
-                <Button asChild variant="outline" size="lg" className="h-14 rounded-full px-8 text-base border-2 bg-white/50 border-slate-200 text-slate-700 hover:border-blue-600 hover:text-blue-600 hover:bg-blue-50/50 dark:bg-slate-800/50 dark:border-slate-700 dark:text-slate-200 dark:hover:border-blue-400 dark:hover:text-blue-400 dark:hover:bg-blue-900/20 hover-lift active:scale-95 transition-all">
-                  <Link href="/auth/login?role=admin">Admin Dashboard</Link>
-                </Button>
-              </div>
-              
-              {/* Trust/Stats */}
-              <div className="mt-20 grid grid-cols-2 gap-8 md:grid-cols-3 animate-slide-up">
-                <div className="flex flex-col gap-1">
-                  <span className="font-display text-3xl font-bold text-foreground dark:text-white">500+</span>
-                  <span className="text-sm font-medium text-slate-500 uppercase tracking-wider">Issues Resolved</span>
-                </div>
-                <div className="flex flex-col gap-1 border-x border-slate-200 px-8">
-                  <span className="font-display text-3xl font-bold text-foreground dark:text-white">95%</span>
-                  <span className="text-sm font-medium text-slate-500 uppercase tracking-wider">Satisfaction</span>
-                </div>
-                <div className="hidden flex-col gap-1 md:flex">
-                  <span className="font-display text-3xl font-bold text-foreground dark:text-white">&lt; 24h</span>
-                  <span className="text-sm font-medium text-slate-500 uppercase tracking-wider">Avg Response</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
 
-        {/* Feature Preview Section */}
-        <section id="features" className="py-24 bg-card transition-colors">
-          <div className="mx-auto max-w-7xl px-6">
-            <div className="grid items-center gap-16 lg:grid-cols-2">
-              <div className="space-y-8 animate-fade-in">
-                <div>
-                  <h2 className="font-display text-3xl font-bold text-foreground dark:text-white sm:text-4xl">
-                    Everything you need for a <span className="text-blue-600">better hostel experience.</span>
-                  </h2>
-                </div>
-                <div className="grid gap-8">
-                  {features.map((feature) => (
-                    <div key={feature.title} className="flex gap-6 group">
-                      <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl ${feature.bg} ${feature.color} shadow-sm transition-transform group-hover:scale-110`}>
-                        <feature.icon className="h-6 w-6" />
-                      </div>
-                      <div>
-                        <h3 className="font-display text-lg font-bold text-foreground dark:text-white">{feature.title}</h3>
-                        <p className="mt-1 text-slate-600 dark:text-slate-400 leading-relaxed">{feature.description}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
+        {/* ── Hero ─────────────────────────────────────────── */}
+        <section className="mx-auto max-w-7xl px-5 md:px-8 py-14 md:py-20 animate-fade-in">
+          <div className="grid gap-12 lg:grid-cols-[1fr_1.4fr] lg:gap-16 items-start">
 
-              {/* Decorative App Mockup */}
-              <div className="relative animate-slide-up">
-                <div className="absolute -inset-4 rounded-[2.5rem] bg-blue-100/50 [mask-image:radial-gradient(closest-side,white,transparent)]" />
-                <div className="glass relative rounded-3xl p-6 shadow-2xl">
-                  <div className="flex items-center justify-between border-b border-slate-100 pb-4">
-                    <div>
-                      <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Current Task</p>
-                      <h4 className="font-display text-lg font-bold text-foreground dark:text-white">Room 402 AC Repair</h4>
-                    </div>
-                    <Badge className="bg-amber-100 text-amber-700 hover:bg-amber-100">In Progress</Badge>
-                  </div>
-                  <div className="mt-6 space-y-6">
-                    <div className="flex items-center gap-4">
-                      <div className="h-10 w-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 dark:text-slate-400 font-bold">AM</div>
-                      <div>
-                        <p className="text-sm font-bold text-foreground dark:text-white">Alex Morgan (Student)</p>
-                        <p className="text-xs text-slate-500">Submitted 2 hours ago</p>
-                      </div>
-                    </div>
-                    <div className="space-y-3">
-                      <p className="text-sm font-bold text-foreground dark:text-white">Activity Timeline</p>
-                      <div className="space-y-4">
-                        <TimelineItem label="Ticket Created" time="10:00 AM" status="complete" />
-                        <TimelineItem label="Assigned to Electrician" time="10:45 AM" status="complete" />
-                        <TimelineItem label="Technical Check in Progress" time="11:30 AM" status="active" />
-                        <TimelineItem label="Expected Resolution" time="04:00 PM" status="pending" />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* CTA Section */}
-        <section className="py-24">
-          <div className="mx-auto max-w-7xl px-6">
-            <div className="relative overflow-hidden rounded-[2.5rem] bg-slate-900 dark:bg-slate-900/80 px-8 py-16 text-center md:px-16 md:py-24 shadow-2xl">
-              <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_top_right,#1e4ed8_0%,transparent_50%)] opacity-20" />
-              <div className="relative z-10 flex flex-col items-center">
-                <h2 className="font-display text-4xl font-bold text-white md:text-5xl">Ready to fix your hostel?</h2>
-                <p className="mt-6 max-w-xl text-lg text-slate-300">
-                  Join hundreds of students who are already using Hostel Sync to make their living space better.
+            {/* Left: headline + CTAs */}
+            <div className="flex flex-col gap-8 pt-2">
+              <div>
+                <p className="font-mono text-[11px] font-bold uppercase tracking-[0.2em] text-[#8B2326] mb-4">
+                  Complaint Register — Academic Year 2025–26
                 </p>
-                <div className="mt-10 flex flex-wrap justify-center gap-4">
-                  <Button asChild size="lg" variant="secondary" className="bg-white text-slate-900 hover:bg-slate-50 rounded-full px-8 h-14 font-extrabold shadow-xl transition-all hover-lift active:scale-95">
-                    <Link href="/auth/register">Create Student Account</Link>
-                  </Button>
-                  <Button asChild size="lg" variant="outline" className="h-14 rounded-full px-8 text-base border-2 bg-slate-800/50 border-slate-700 text-slate-200 hover:border-blue-400 hover:text-blue-400 hover:bg-blue-900/20 hover-lift active:scale-95 transition-all">
-                    <Link href="/auth/login?role=admin">Admin Access</Link>
-                  </Button>
+                <h1 className="font-display text-4xl md:text-5xl font-bold text-foreground leading-[1.1] tracking-tight">
+                  File. Track.<br />
+                  <span className="text-[#8B2326]">Resolve.</span>
+                </h1>
+                <p className="mt-5 text-[15px] leading-relaxed text-muted max-w-sm">
+                  A structured complaint register for hostel residents and wardens. No follow-up calls,
+                  no lost slips — every issue logged, timestamped, and traceable.
+                </p>
+              </div>
+
+              <div className="flex flex-col gap-3 sm:flex-row">
+                <Button asChild size="md" variant="primary">
+                  <Link href="/auth/register">Open Student Account</Link>
+                </Button>
+                <Button asChild size="md" variant="outline">
+                  <Link href="/auth/login?role=admin">Admin Portal →</Link>
+                </Button>
+              </div>
+
+              {/* Stats tally */}
+              <div className="grid grid-cols-3 border border-border divide-x divide-border mt-2">
+                <div className="px-4 py-3">
+                  <p className="font-mono text-2xl font-bold text-foreground">847</p>
+                  <p className="font-mono text-[10px] uppercase tracking-widest text-muted mt-0.5">Logged</p>
                 </div>
+                <div className="px-4 py-3">
+                  <p className="font-mono text-2xl font-bold text-foreground">793</p>
+                  <p className="font-mono text-[10px] uppercase tracking-widest text-muted mt-0.5">Resolved</p>
+                </div>
+                <div className="px-4 py-3">
+                  <p className="font-mono text-2xl font-bold text-[#8B2326]">54</p>
+                  <p className="font-mono text-[10px] uppercase tracking-widest text-muted mt-0.5">Open</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Right: live-looking ledger */}
+            <div className="border border-border bg-card">
+              {/* Ledger header */}
+              <div className="border-b border-border px-5 py-3 flex items-center justify-between bg-background">
+                <span className="font-mono text-[11px] uppercase tracking-widest text-muted">
+                  Recent Entries — Block A/B/C
+                </span>
+                <span className="font-mono text-[10px] text-muted">
+                  {new Date().toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
+                </span>
+              </div>
+
+              {/* Column headers */}
+              <div className="grid grid-cols-[3.5rem_1fr_auto] border-b border-border bg-background/60 px-5 py-2 gap-4">
+                <span className="font-mono text-[9px] uppercase tracking-widest text-muted">Ref No.</span>
+                <span className="font-mono text-[9px] uppercase tracking-widest text-muted">Issue / Category</span>
+                <span className="font-mono text-[9px] uppercase tracking-widest text-muted">Status</span>
+              </div>
+
+              {/* Entries */}
+              {sampleEntries.map((entry, i) => (
+                <div
+                  key={entry.id}
+                  className={`grid grid-cols-[3.5rem_1fr_auto] items-start gap-4 px-5 py-3.5 border-l-[3px] ${
+                    entry.priority === "urgent" ? "border-l-[#8B2326]" : "border-l-transparent"
+                  } ${i < sampleEntries.length - 1 ? "border-b border-border" : ""}`}
+                >
+                  <div>
+                    <p className="font-mono text-[10px] font-bold text-muted">{entry.id}</p>
+                    <p className="font-mono text-[9px] text-muted/60 mt-0.5">{entry.date}</p>
+                  </div>
+                  <div>
+                    <p className="text-[13px] font-medium text-foreground leading-snug">{entry.title}</p>
+                    <p className="font-mono text-[9px] uppercase tracking-wider text-muted mt-0.5">{entry.category}</p>
+                  </div>
+                  <div className="pt-0.5">
+                    <span className={`font-mono text-[9px] font-bold tracking-widest border px-1.5 py-0.5 rounded-[1px] ${statusColor[entry.status]}`}>
+                      {statusLabel[entry.status]}
+                    </span>
+                  </div>
+                </div>
+              ))}
+
+              <div className="border-t border-border px-5 py-2.5 bg-background/60">
+                <span className="font-mono text-[9px] text-muted tracking-widest uppercase">
+                  Showing 6 of 54 open entries · Sorted by date desc
+                </span>
               </div>
             </div>
           </div>
         </section>
+
+        {/* ── Divider ─────────────────────────────────────── */}
+        <div className="border-t border-border" />
+
+        {/* ── How it works ────────────────────────────────── */}
+        <section id="how-it-works" className="mx-auto max-w-7xl px-5 md:px-8 py-16 md:py-20">
+          <div className="mb-12">
+            <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-muted mb-2">The system</p>
+            <h2 className="font-display text-2xl md:text-3xl font-bold text-foreground">How HostelSync works</h2>
+          </div>
+
+          <div className="grid gap-0 md:grid-cols-3 border border-border divide-y md:divide-y-0 md:divide-x divide-border">
+            {[
+              {
+                n: "01",
+                role: "Student files a complaint",
+                desc: "Select category (Water Supply, Electricity, Internet/WiFi, Food Quality, Cleanliness, Maintenance), describe the issue, mark urgency. Complaint is logged with an auto-assigned reference number and timestamp.",
+              },
+              {
+                n: "02",
+                role: "Admin triages the register",
+                desc: "Warden or hostel manager reviews the live register, updates status to In Progress, assigns internally. Real-time sync means no stale views — changes propagate instantly.",
+              },
+              {
+                n: "03",
+                role: "Issue resolved, record closed",
+                desc: "Once resolved, admin marks the ticket Closed. Student sees the status update immediately. Full audit trail preserved — every complaint permanently on record.",
+              },
+            ].map(item => (
+              <div key={item.n} className="p-6 md:p-8">
+                <p className="font-mono text-[11px] font-bold text-[#8B2326] tracking-widest mb-4">{item.n}</p>
+                <h3 className="font-display text-base font-bold text-foreground mb-2">{item.role}</h3>
+                <p className="text-[14px] leading-relaxed text-muted">{item.desc}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* ── Divider ─────────────────────────────────────── */}
+        <div className="border-t border-border" />
+
+        {/* ── Categories ──────────────────────────────────── */}
+        <section className="mx-auto max-w-7xl px-5 md:px-8 py-12">
+          <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-muted mb-5">Tracked categories</p>
+          <div className="flex flex-wrap gap-2">
+            {["Water Supply", "Electricity", "Internet / WiFi", "Food Quality", "Cleanliness", "Maintenance"].map(cat => (
+              <span key={cat} className="font-mono text-[11px] uppercase tracking-wider border border-border px-3 py-1.5 text-muted hover:text-foreground hover:border-foreground transition-colors cursor-default">
+                {cat}
+              </span>
+            ))}
+          </div>
+        </section>
+
       </main>
 
-      {/* Footer */}
-      <footer className="border-t border-border bg-card py-12 transition-colors">
-        <div className="mx-auto max-w-7xl px-6">
-          <div className="flex flex-col items-center justify-between gap-8 md:flex-row">
-            <div className="flex items-center gap-3">
-              <Logo size={32} showText={false} />
-              <span className="font-display font-bold text-foreground dark:text-white">Hostel Sync</span>
-            </div>
-            <div className="flex gap-8 text-sm text-slate-500">
-              <Link href="#" className="hover:text-blue-600">Privacy Policy</Link>
-              <Link href="#" className="hover:text-blue-600">Terms of Service</Link>
-              <Link href="#" className="hover:text-blue-600">Contact Support</Link>
-            </div>
-            <p className="text-sm text-slate-400">
-              © 2026 Hostel Sync. All rights reserved.
-            </p>
+      {/* ── Footer ────────────────────────────────────────── */}
+      <footer className="border-t border-border bg-card">
+        <div className="mx-auto max-w-7xl px-5 md:px-8 py-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-5">
+          <div className="flex items-center gap-2">
+            <Logo size={22} showText={false} />
+            <span className="font-mono text-xs font-bold uppercase tracking-widest text-foreground">
+              Hostel<span className="text-[#8B2326]">Sync</span>
+            </span>
           </div>
+          <div className="flex gap-6 text-[12px] text-muted font-medium">
+            <Link href="#" className="hover:text-foreground transition-colors">Privacy Policy</Link>
+            <Link href="#" className="hover:text-foreground transition-colors">Terms of Service</Link>
+            <Link href="#" className="hover:text-foreground transition-colors">Contact Warden</Link>
+          </div>
+          <p className="font-mono text-[11px] text-muted">
+            © 2026 HostelSync
+          </p>
         </div>
       </footer>
-    </div>
-  );
-}
 
-function TimelineItem({ label, time, status }: { label: string; time: string; status: "complete" | "active" | "pending" }) {
-  return (
-    <div className="flex items-start gap-3">
-      <div className="mt-1.5 flex h-4 w-4 shrink-0 items-center justify-center">
-        {status === "complete" ? (
-          <div className="h-2.5 w-2.5 rounded-full bg-blue-600" />
-        ) : status === "active" ? (
-          <div className="h-2.5 w-2.5 animate-pulse rounded-full bg-blue-600 ring-4 ring-blue-100" />
-        ) : (
-          <div className="h-2.5 w-2.5 rounded-full bg-slate-200" />
-        )}
-      </div>
-      <div>
-        <p className={`text-sm font-bold ${status === "pending" ? "text-slate-400" : "text-foreground dark:text-white"}`}>{label}</p>
-        <p className="text-xs text-slate-500">{time}</p>
-      </div>
     </div>
   );
 }

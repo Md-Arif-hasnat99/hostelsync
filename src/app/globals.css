@@ -1,69 +1,59 @@
 @import "tailwindcss";
 
 @theme {
-  --color-primary-50: #eff6ff;
-  --color-primary-100: #dbeafe;
-  --color-primary-500: #3b82f6;
-  --color-primary-600: #2563eb;
-  --color-primary-700: #1d4ed8;
+  /* Paper / Graphite palette */
+  --color-paper: #F5F0E8;
+  --color-paper-dark: #EDE8DF;
+  --color-ink: #1C1917;
+  --color-ink-light: #44403C;
+  --color-ink-faint: #78716C;
+  --color-ink-hairline: #D6CFC4;
 
-  --color-accent-500: #0ea5e9;
-  --color-accent-600: #0284c7;
+  /* Single accent: muted ink-red — urgent marks only */
+  --color-accent: #8B2326;
+  --color-accent-light: #F2E4E4;
 
-  --color-success: #10b981;
-  --color-warning: #f59e0b;
-  --color-error: #ef4444;
+  /* Functional status colors — muted, not vibrant */
+  --color-status-pending: #92400E;       /* dark ochre */
+  --color-status-pending-bg: #FEF3C7;
+  --color-status-progress: #1C1917;      /* graphite (active = ink) */
+  --color-status-progress-bg: #E7E5E4;
+  --color-status-resolved: #14532D;      /* forest green */
+  --color-status-resolved-bg: #DCFCE7;
 
-  --radius-xl: 1rem;
-  --radius-2xl: 1.5rem;
-
-  --color-primary: var(--color-primary-600);
-  --color-primary-foreground: white;
-  --color-accent: var(--color-accent-500);
-
-  --font-sans: var(--font-inter);
-  --font-display: var(--font-outfit);
-
-  --animate-fade-in: fade-in 0.5s ease-out;
-  --animate-slide-up: slide-up 0.5s ease-out;
-
-  /* Semantic Theme Colors */
+  /* Semantic mapping */
   --color-background: var(--bg-app);
   --color-foreground: var(--fg-app);
   --color-border: var(--border-app);
   --color-card: var(--card-app);
   --color-muted: var(--muted-app);
-  
-  /* Map for existing code support */
-  --color-app-bg: var(--bg-app);
-  --color-app-fg: var(--fg-app);
 
-  --color-slate-50: var(--bg-app);
-  --color-slate-100: var(--card-app);
+  /* Fonts */
+  --font-sans: var(--font-inter);
+  --font-display: var(--font-outfit);
+  --font-mono: var(--font-ibm-plex-mono);
+
+  /* Animations */
+  --animate-fade-in: fade-in 0.4s ease-out;
+  --animate-slide-up: slide-up 0.4s ease-out;
 }
 
 @variant dark (&:where(.dark, .dark *));
 
 :root {
-  --bg-app: #f8fafc;
-  --fg-app: #0f172a;
-  --border-app: #e2e8f0;
-  --card-app: #ffffff;
-  --muted-app: #64748b;
-  
-  --glass-bg: 255, 255, 255;
-  --glass-border: 255, 255, 255;
+  --bg-app: #F5F0E8;
+  --fg-app: #1C1917;
+  --border-app: #D6CFC4;
+  --card-app: #FDFAF5;
+  --muted-app: #78716C;
 }
 
 .dark {
-  --bg-app: #020617;
-  --fg-app: #f8fafc;
-  --border-app: #1e293b;
-  --card-app: #0f172a;
-  --muted-app: #94a3b8;
-  
-  --glass-bg: 15, 23, 42;
-  --glass-border: 255, 255, 255;
+  --bg-app: #18120E;
+  --fg-app: #EDE8DF;
+  --border-app: #3A2F28;
+  --card-app: #221A15;
+  --muted-app: #A09080;
 }
 
 @keyframes fade-in {
@@ -72,7 +62,7 @@
 }
 
 @keyframes slide-up {
-  from { transform: translateY(20px); opacity: 0; }
+  from { transform: translateY(12px); opacity: 0; }
   to { transform: translateY(0); opacity: 1; }
 }
 
@@ -89,25 +79,44 @@ body {
   transition: background-color 0.3s ease, color 0.3s ease;
 }
 
-/* Glass Effect */
-.glass {
-  background: rgba(var(--glass-bg), 0.7);
-  backdrop-filter: blur(12px);
-  border: 1px solid rgba(var(--glass-border), 0.1);
-  box-shadow: 0 8px 32px 0 rgba(15, 23, 42, 0.05);
+/* Ledger / Register utilities */
+.ledger-id {
+  font-family: var(--font-ibm-plex-mono), 'Courier New', monospace;
+  font-size: 0.7rem;
+  letter-spacing: 0.04em;
+  color: var(--muted-app);
 }
 
-.text-gradient {
-  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
-  background-clip: text;
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+.mono {
+  font-family: var(--font-ibm-plex-mono), 'Courier New', monospace;
 }
 
-.hover-lift {
-  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+/* Status stamps — used across all badges */
+.stamp {
+  display: inline-block;
+  font-family: var(--font-ibm-plex-mono), monospace;
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 1px 6px;
+  border: 1px solid currentColor;
+  border-radius: 1px;
 }
 
-.hover-lift:hover {
-  transform: translateY(-4px);
+/* Ledger row — perforated left edge */
+.ledger-row {
+  border-left: 3px dotted var(--border-app);
+  padding-left: 1rem;
+}
+
+/* Hairline separators */
+.hairline {
+  border-top: 1px solid var(--border-app);
+}
+
+/* Ink-red accent selection */
+::selection {
+  background: #F2E4E4;
+  color: #8B2326;
 }

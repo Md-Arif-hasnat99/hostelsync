@@ -7,19 +7,28 @@ type BadgeProps = {
   className?: string;
 };
 
+// Stamp-style color map: text-forward, bordered, no pill fills
 const colorMap = {
-  info: "bg-blue-50 dark:bg-blue-600/10 text-blue-700 dark:text-blue-400 border-blue-100 dark:border-blue-900",
-  success: "bg-emerald-50 dark:bg-emerald-600/10 text-emerald-700 dark:text-emerald-400 border-emerald-100 dark:border-emerald-900",
-  warning: "bg-amber-50 dark:bg-amber-600/10 text-amber-700 dark:text-amber-400 border-amber-100 dark:border-amber-900",
-  danger: "bg-red-50 dark:bg-red-600/10 text-red-700 dark:text-red-400 border-red-100 dark:border-red-900",
-  neutral: "bg-background dark:bg-card text-muted border-border",
+  // graphite / neutral blue-tone → use ink
+  info:    "text-[#44403C] border-[#A09080] bg-transparent",
+  // forest green → resolved
+  success: "text-[#14532D] border-[#14532D] bg-transparent",
+  // ochre → pending
+  warning: "text-[#92400E] border-[#92400E] bg-transparent",
+  // ink-red → urgent / danger
+  danger:  "text-[#8B2326] border-[#8B2326] bg-transparent",
+  // faintest ink
+  neutral: "text-[#78716C] border-[#D6CFC4] bg-transparent",
 };
 
 export function Badge({ children, color = "neutral", className }: BadgeProps) {
   return (
     <span
       className={clsx(
-        "inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs font-bold tracking-tight",
+        // Stamp: no pill, hard corner, monospace uppercase
+        "inline-flex items-center gap-1 border px-1.5 py-px",
+        "font-mono text-[10px] font-bold tracking-widest uppercase",
+        "rounded-[1px]",
         colorMap[color],
         className
       )}
