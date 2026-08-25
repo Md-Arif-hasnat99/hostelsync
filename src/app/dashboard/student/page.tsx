@@ -97,6 +97,7 @@ export default function StudentDashboardPage() {
   const { theme, toggleTheme } = useTheme();
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
+  const [profile, setProfile] = useState<any>(null);
 
   useEffect(() => {
     async function init() {
@@ -106,6 +107,25 @@ export default function StudentDashboardPage() {
         return;
       }
       setUser(userData.user);
+
+      // Verify user profile role is student
+      const { data: profileData } = await supabase
+        .from("profiles")
+        .select("role, full_name, hostel, room")
+        .eq("id", userData.user.id)
+        .single();
+
+      if (!profileData) {
+        router.push("/auth/login");
+        return;
+      }
+
+      if (profileData.role !== "student") {
+        router.push("/dashboard/admin");
+        return;
+      }
+
+      setProfile(profileData);
 
       const { data, error } = await supabase
         .from("complaints")
@@ -284,8 +304,10 @@ export default function StudentDashboardPage() {
     });
   }, [complaints, search, statusFilter, priorityFilter]);
 
-  const userName = user?.user_metadata?.name || "Student";
-  const hostelInfo = user?.user_metadata?.hostel
+  const userName = profile?.full_name || user?.user_metadata?.name || "Student";
+  const hostelInfo = profile?.hostel
+    ? `${profile.hostel}${profile.room ? `, Rm ${profile.room}` : ""}`
+    : user?.user_metadata?.hostel
     ? `${user.user_metadata.hostel}${user.user_metadata.room ? `, Rm ${user.user_metadata.room}` : ""}`
     : "Hostel Resident";
 

@@ -20,20 +20,9 @@ const schema = z.object({
     .string()
     .min(8, "Min 8 characters")
     .regex(/^(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).+$/, "Include uppercase, number, special char"),
-  role: z.enum(["student", "admin"]),
-  hostel: z.string().optional(),
+  hostel: z.string().min(2, "Hostel is required"),
   room: z.string().optional(),
   accept: z.literal(true, { message: "Please accept terms" }),
-}).superRefine((data, ctx) => {
-  if (data.role === "student") {
-    if (!data.hostel || data.hostel.length < 2) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: "Hostel is required",
-        path: ["hostel"],
-      });
-    }
-  }
 });
 
 type FormData = z.infer<typeof schema>;
@@ -47,14 +36,10 @@ export default function RegisterPage() {
   const {
     register,
     handleSubmit,
-    watch,
     formState: { errors },
   } = useForm<FormData>({
     resolver: zodResolver(schema),
-    defaultValues: { role: "student" },
   });
-
-  const selectedRole = watch("role");
 
   const onSubmit = async (values: FormData) => {
     setSubmitting(true);
@@ -69,7 +54,7 @@ export default function RegisterPage() {
           name: values.name,
           hostel: values.hostel,
           room: values.room,
-          role: values.role,
+          role: "student",
         },
       },
     });
@@ -80,10 +65,8 @@ export default function RegisterPage() {
       return;
     }
 
-    const role = (data.user?.user_metadata?.role as "admin" | "student") ?? values.role;
-
     if (data.session) {
-      router.push(`/dashboard/${role === "admin" ? "admin" : "student"}`);
+      router.push("/dashboard/student");
       return;
     }
 
@@ -172,32 +155,21 @@ export default function RegisterPage() {
                 </div>
 
                 <div className="space-y-1.5">
-                  <Select label="Account Role" {...register("role")}>
-                    <option value="student">Student / Resident</option>
-                    <option value="admin">Administrator / Warden</option>
-                  </Select>
+                  <Input
+                    label="Hostel Block"
+                    placeholder="e.g. Block A, Block C"
+                    {...register("hostel")}
+                  />
+                  {errors.hostel && <p className="font-mono text-[11px] text-[#8B2326]">{errors.hostel.message}</p>}
                 </div>
 
-                {selectedRole === "student" && (
-                  <>
-                    <div className="space-y-1.5">
-                      <Input
-                        label="Hostel Block"
-                        placeholder="e.g. Block A, Block C"
-                        {...register("hostel")}
-                      />
-                      {errors.hostel && <p className="font-mono text-[11px] text-[#8B2326]">{errors.hostel.message}</p>}
-                    </div>
-
-                    <div className="space-y-1.5">
-                      <Input
-                        label="Room Number"
-                        placeholder="e.g. 214, 302B"
-                        {...register("room")}
-                      />
-                    </div>
-                  </>
-                )}
+                <div className="space-y-1.5">
+                  <Input
+                    label="Room Number"
+                    placeholder="e.g. 214, 302B"
+                    {...register("room")}
+                  />
+                </div>
               </div>
 
               {/* Terms */}

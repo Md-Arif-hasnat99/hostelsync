@@ -85,11 +85,24 @@ export default function AdminDashboardPage() {
 
   // Auth check
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
-      if (!data.user) {
-        router.push("/auth/login?role=admin");
+    async function checkAuth() {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        router.push("/auth/login");
+        return;
       }
-    });
+
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("role")
+        .eq("id", user.id)
+        .single();
+
+      if (profile?.role !== "admin") {
+        router.push("/dashboard/student");
+      }
+    }
+    checkAuth();
   }, [router]);
 
   // Real-time sync

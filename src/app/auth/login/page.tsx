@@ -15,7 +15,6 @@ import { rememberStorageKey, supabase } from "@/lib/supabase";
 const schema = z.object({
   email: z.string().email("Enter a valid email"),
   password: z.string().min(8, "Minimum 8 characters"),
-  role: z.enum(["student", "admin"]),
   remember: z.boolean().optional(),
 });
 
@@ -29,7 +28,7 @@ export default function LoginPage() {
     register,
     handleSubmit,
     formState: { errors },
-  } = useForm<FormData>({ resolver: zodResolver(schema), defaultValues: { role: "student" } });
+  } = useForm<FormData>({ resolver: zodResolver(schema) });
 
   const onSubmit = async (values: FormData) => {
     setSubmitting(true);
@@ -50,8 +49,19 @@ export default function LoginPage() {
       return;
     }
 
-    const role = (data?.user?.user_metadata?.role as "admin" | "student") ?? values.role;
-    router.push(`/dashboard/${role === "admin" ? "admin" : "student"}`);
+    const { data: profile, error: profileError } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", data.user.id)
+      .single();
+
+    if (profileError || !profile) {
+      setErrorMessage("User profile not found. Contact administration.");
+      setSubmitting(false);
+      return;
+    }
+
+    router.push(`/dashboard/${profile.role}`);
     setSubmitting(false);
   };
 
@@ -109,13 +119,6 @@ export default function LoginPage() {
                   aria-invalid={!!errors.password}
                 />
                 {errors.password && <p className="font-mono text-[11px] text-[#8B2326]">{errors.password.message}</p>}
-              </div>
-
-              <div className="space-y-1.5">
-                <Select label="Sign in as" {...register("role")}>
-                  <option value="student">Student</option>
-                  <option value="admin">Administrator / Warden</option>
-                </Select>
               </div>
 
               <div className="flex items-center justify-between pt-1">
