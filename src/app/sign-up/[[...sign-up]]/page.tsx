@@ -13,15 +13,17 @@ export default function SignUpPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+    setNotice(null);
     setLoading(true);
 
     const supabase = createClient();
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -38,8 +40,13 @@ export default function SignUpPage() {
       return;
     }
 
-    router.push("/dashboard");
-    router.refresh();
+    if (data.session) {
+      router.push("/dashboard");
+      router.refresh();
+    } else {
+      setNotice("Please check your email to confirm your registration.");
+      setLoading(false);
+    }
   }
 
   return (
@@ -109,6 +116,12 @@ export default function SignUpPage() {
             {error && (
               <p className="font-mono text-[11px] text-[#8B2326] border border-[#8B2326]/30 bg-[#8B2326]/5 px-3 py-2 rounded-[2px]">
                 {error}
+              </p>
+            )}
+
+            {notice && (
+              <p className="font-mono text-[11px] text-[#14532D] border border-[#14532D]/30 bg-[#14532D]/5 px-3 py-2 rounded-[2px]">
+                {notice}
               </p>
             )}
 

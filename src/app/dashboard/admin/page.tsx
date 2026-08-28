@@ -93,8 +93,8 @@ export default function AdminDashboardPage() {
       setSupabaseUser({
         id: session.user.id,
         email: session.user.email,
-        firstName: meta?.full_name?.split(" ")[0] ?? "",
-        lastName: meta?.full_name?.split(" ").slice(1).join(" ") ?? "",
+        firstName: meta?.full_name?.split(" ")[0] || "Warden",
+        lastName: meta?.full_name?.split(" ").slice(1).join(" ") || "",
       });
     });
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
@@ -246,7 +246,7 @@ export default function AdminDashboardPage() {
         <div className="border-t border-border px-4 py-3">
           <p className="font-mono text-[10px] uppercase tracking-widest text-muted">Admin Portal</p>
           <p className="text-[12px] font-medium text-foreground mt-0.5">
-            {supabaseUser?.firstName ?? "Warden"} {supabaseUser?.lastName ?? ""}
+            {supabaseUser?.firstName || "Warden"} {supabaseUser?.lastName || ""}
           </p>
         </div>
       </aside>
