@@ -9,9 +9,9 @@
     "lint": "eslint"
   },
   "dependencies": {
-    "@clerk/nextjs": "^7.8.2",
     "@hookform/resolvers": "^5.2.2",
     "@radix-ui/react-slot": "^1.2.4",
+    "@supabase/ssr": "^0.12.5",
     "@supabase/supabase-js": "^2.89.0",
     "@tanstack/react-query": "^5.90.15",
     "axios": "^1.13.2",

@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { Inter, Outfit, IBM_Plex_Mono } from "next/font/google";
-import { ClerkProvider } from "@clerk/nextjs";
 import { Providers } from "./providers";
 import "./globals.css";
 
@@ -40,14 +39,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <ClerkProvider>
-      <html lang="en">
-        <body
-          className={`${inter.variable} ${outfit.variable} ${ibmPlexMono.variable} bg-background text-foreground antialiased`}
-        >
-          <Providers>{children}</Providers>
-        </body>
-      </html>
-    </ClerkProvider>
+    <html lang="en">
+      <body
+        className={`${inter.variable} ${outfit.variable} ${ibmPlexMono.variable} bg-background text-foreground antialiased`}
+      >
+        <Providers>{children}</Providers>
+      </body>
+    </html>
   );
 }

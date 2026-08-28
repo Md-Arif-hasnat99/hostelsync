@@ -1,7 +1,6 @@
 "use server";
 
-import { auth, currentUser } from "@clerk/nextjs/server";
-import { createServiceClient } from "@/lib/supabase-server";
+import { createServerSupabaseClient, createServiceClient } from "@/lib/supabase-server";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -25,51 +24,20 @@ export type Profile = {
 
 // ─── Profile ──────────────────────────────────────────────────────────────────
 
-/** Get the profile for the currently logged-in Clerk user. */
+/** Get the profile for the currently logged-in Supabase user. */
 export async function getMyProfile(): Promise<Profile | null> {
-  const { userId } = await auth();
-  if (!userId) return null;
+  const supabase = await createServerSupabaseClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return null;
 
   const db = createServiceClient();
   const { data, error } = await db
     .from("profiles")
     .select("id, role, full_name, hostel, room")
-    .eq("id", userId)
+    .eq("id", user.id)
     .single();
 
-  if (error || !data) {
-    // Auto-create profile row if it doesn't exist yet (handles local development/webhook delay)
-    try {
-      const user = await currentUser();
-      if (!user) return null;
-
-      const fullName = [user.firstName, user.lastName].filter(Boolean).join(" ") || null;
-      const hostel = (user.unsafeMetadata?.hostel as string) || null;
-      const room = (user.unsafeMetadata?.room as string) || null;
-      const role = (user.unsafeMetadata?.role as "student" | "admin") || "student";
-
-      const { data: newProfile, error: insertError } = await db
-        .from("profiles")
-        .insert({
-          id: userId,
-          full_name: fullName,
-          hostel,
-          room,
-          role,
-        })
-        .select("id, role, full_name, hostel, room")
-        .single();
-
-      if (insertError) {
-        console.error("Auto-creation of profile failed:", insertError.message);
-        return null;
-      }
-      return newProfile as Profile;
-    } catch (e) {
-      console.error("Failed to query Clerk currentUser or create profile:", e);
-      return null;
-    }
-  }
+  if (error || !data) return null;
   return data as Profile;
 }
 
@@ -77,14 +45,15 @@ export async function getMyProfile(): Promise<Profile | null> {
 
 /** Fetch complaints belonging to the currently logged-in student. */
 export async function getMyComplaints() {
-  const { userId } = await auth();
-  if (!userId) throw new Error("Not authenticated");
+  const supabase = await createServerSupabaseClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error("Not authenticated");
 
   const db = createServiceClient();
   const { data, error } = await db
     .from("complaints")
     .select("id, title, category, status, priority, created_at")
-    .eq("student_id", userId)
+    .eq("student_id", user.id)
     .order("created_at", { ascending: false });
 
   if (error) throw new Error(error.message);
@@ -98,8 +67,9 @@ export async function submitComplaint(values: {
   description: string;
   priority: "normal" | "urgent";
 }) {
-  const { userId } = await auth();
-  if (!userId) throw new Error("Not authenticated");
+  const supabase = await createServerSupabaseClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error("Not authenticated");
 
   // Verify student role before allowing insert
   const profile = await getMyProfile();
@@ -115,7 +85,7 @@ export async function submitComplaint(values: {
       description: values.description,
       priority: values.priority,
       status: "pending",
-      student_id: userId,
+      student_id: user.id,
     })
     .select("id, created_at")
     .limit(1)
@@ -129,18 +99,19 @@ export async function submitComplaint(values: {
 
 /** Verify that the current user is an admin. Throws if not. */
 async function requireAdmin() {
-  const { userId } = await auth();
-  if (!userId) throw new Error("Not authenticated");
+  const supabase = await createServerSupabaseClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error("Not authenticated");
 
   const db = createServiceClient();
   const { data: profile } = await db
     .from("profiles")
     .select("role")
-    .eq("id", userId)
+    .eq("id", user.id)
     .single();
 
   if (profile?.role !== "admin") throw new Error("Admin access required");
-  return userId;
+  return user.id;
 }
 
 /** Fetch all complaints (admin only). */

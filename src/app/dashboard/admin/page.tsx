@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useUser, useClerk } from "@clerk/nextjs";
 import { Badge } from "@/components/ui/badge";
 import { Logo } from "@/components/Logo";
 import { Button } from "@/components/ui/button";
@@ -17,7 +16,7 @@ import {
   Tooltip,
   BarElement,
 } from "chart.js";
-import { supabase } from "@/lib/supabase";
+import { createClient } from "@/lib/supabase";
 import {
   Search, LogOut, LayoutDashboard, Settings, Download, RefreshCcw,
   Users, History, Plus, Sun, Moon, Menu, X, Zap
@@ -63,11 +62,10 @@ const chartOptions = {
 };
 
 export default function AdminDashboardPage() {
-  const { user, isLoaded } = useUser();
-  const { signOut } = useClerk();
   const router = useRouter();
   const { theme, toggleTheme } = useTheme();
   const queryClient = useQueryClient();
+  const [supabaseUser, setSupabaseUser] = useState<{ id: string; email?: string; firstName?: string; lastName?: string } | null>(null);
 
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [signingOut, setSigningOut] = useState(false);
@@ -86,14 +84,28 @@ export default function AdminDashboardPage() {
   ]);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
 
-  // Auth guard: verify user is an admin via server action
+  // Auth guard: get Supabase session
   useEffect(() => {
-    if (!isLoaded) return;
-    if (!user) { router.push("/sign-in"); return; }
-  }, [isLoaded, user, router]);
+    const supabase = createClient();
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!session) { router.push("/sign-in"); return; }
+      const meta = session.user.user_metadata;
+      setSupabaseUser({
+        id: session.user.id,
+        email: session.user.email,
+        firstName: meta?.full_name?.split(" ")[0] ?? "",
+        lastName: meta?.full_name?.split(" ").slice(1).join(" ") ?? "",
+      });
+    });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!session) { router.push("/sign-in"); }
+    });
+    return () => subscription.unsubscribe();
+  }, [router]);
 
-  // Realtime subscription (anon client — notification only, triggers React Query refetch)
+  // Realtime subscription (triggers React Query refetch)
   useEffect(() => {
+    const supabase = createClient();
     const channel = supabase
       .channel("complaints-live")
       .on(
@@ -126,7 +138,7 @@ export default function AdminDashboardPage() {
     queryFn: getAllComplaints,
     staleTime: 10_000,
     refetchOnWindowFocus: true,
-    enabled: !!user,
+    enabled: !!supabaseUser,
   });
 
   const summary = useMemo(() => {
@@ -155,7 +167,9 @@ export default function AdminDashboardPage() {
 
   const handleSignOut = async () => {
     setSigningOut(true);
-    await signOut({ redirectUrl: "/sign-in" });
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    router.push("/sign-in");
   };
 
   const handleExport = () => {
@@ -232,7 +246,7 @@ export default function AdminDashboardPage() {
         <div className="border-t border-border px-4 py-3">
           <p className="font-mono text-[10px] uppercase tracking-widest text-muted">Admin Portal</p>
           <p className="text-[12px] font-medium text-foreground mt-0.5">
-            {user?.firstName ?? "Warden"} {user?.lastName ?? ""}
+            {supabaseUser?.firstName ?? "Warden"} {supabaseUser?.lastName ?? ""}
           </p>
         </div>
       </aside>

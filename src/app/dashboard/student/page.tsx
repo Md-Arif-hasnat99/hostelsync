@@ -5,12 +5,11 @@ import { useRouter } from "next/navigation";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useUser, useClerk } from "@clerk/nextjs";
 import {
   Search, LogOut, Plus, LayoutDashboard, History,
   Settings, ChevronRight, Sun, Moon, Menu, X
 } from "lucide-react";
-import { supabase } from "@/lib/supabase";
+import { createClient } from "@/lib/supabase";
 import { useTheme } from "@/components/theme-provider";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -51,10 +50,9 @@ const STATUS_COLOR: Record<string, string> = {
 };
 
 export default function StudentDashboardPage() {
-  const { user, isLoaded } = useUser();
-  const { signOut } = useClerk();
   const router = useRouter();
   const { theme, toggleTheme } = useTheme();
+  const [supabaseUser, setSupabaseUser] = useState<{ id: string; email?: string } | null>(null);
 
   const [complaints, setComplaints] = useState<ComplaintRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -70,10 +68,22 @@ export default function StudentDashboardPage() {
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [profile, setProfile] = useState<Profile | null>(null);
 
-  // Load profile + complaints via server actions
+  // Load Supabase session, then profile + complaints
   useEffect(() => {
-    if (!isLoaded) return;
-    if (!user) { router.push("/sign-in"); return; }
+    const supabase = createClient();
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!session) { router.push("/sign-in"); return; }
+      setSupabaseUser({ id: session.user.id, email: session.user.email });
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!session) { router.push("/sign-in"); }
+    });
+    return () => subscription.unsubscribe();
+  }, [router]);
+
+  useEffect(() => {
+    if (!supabaseUser) return;
 
     async function init() {
       const profileData = await getMyProfile();
@@ -96,12 +106,13 @@ export default function StudentDashboardPage() {
       setComplaints(mapped);
       setLoading(false);
 
-      // Realtime subscription (anon client — notification only, no data read)
+      // Realtime subscription
+      const supabase = createClient();
       const channel = supabase
-        .channel(`complaints-student-${user!.id}`)
+        .channel(`complaints-student-${supabaseUser!.id}`)
         .on(
           "postgres_changes",
-          { event: "*", schema: "public", table: "complaints", filter: `student_id=eq.${user!.id}` },
+          { event: "*", schema: "public", table: "complaints", filter: `student_id=eq.${supabaseUser!.id}` },
           async () => {
             const fresh = await getMyComplaints();
             const updated = fresh.map((d: any) => ({
@@ -124,7 +135,7 @@ export default function StudentDashboardPage() {
 
     const cleanup = init();
     return () => { cleanup.then(fn => fn?.()); };
-  }, [isLoaded, user, router]);
+  }, [supabaseUser, router]);
 
   const {
     register,
@@ -167,7 +178,9 @@ export default function StudentDashboardPage() {
 
   const handleSignOut = async () => {
     setSigningOut(true);
-    await signOut({ redirectUrl: "/sign-in" });
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    router.push("/sign-in");
   };
 
   const filteredComplaints = useMemo(() => {
@@ -179,7 +192,7 @@ export default function StudentDashboardPage() {
     });
   }, [complaints, search, statusFilter, priorityFilter]);
 
-  const userName = profile?.full_name || user?.firstName || "Student";
+  const userName = profile?.full_name || supabaseUser?.email?.split("@")[0] || "Student";
   const hostelInfo = profile?.hostel
     ? `${profile.hostel}${profile.room ? `, Rm ${profile.room}` : ""}`
     : "Hostel Resident";
@@ -431,7 +444,7 @@ export default function StudentDashboardPage() {
                         <div>
                           <p className="font-mono text-[9px] uppercase tracking-widest text-muted mb-1">Email</p>
                           <p className="text-[13px] font-medium text-foreground">
-                            {user?.primaryEmailAddress?.emailAddress}
+                            {supabaseUser?.email}
                           </p>
                         </div>
                         <div>

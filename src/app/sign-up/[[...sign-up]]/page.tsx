@@ -2,11 +2,45 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { SignUp } from "@clerk/nextjs";
+import { useRouter } from "next/navigation";
 import { Logo } from "@/components/Logo";
+import { createClient } from "@/lib/supabase";
 
 export default function SignUpPage() {
+  const router = useRouter();
   const [role, setRole] = useState<"student" | "admin">("student");
+  const [fullName, setFullName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+    setLoading(true);
+
+    const supabase = createClient();
+    const { error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          full_name: fullName,
+          role,
+        },
+      },
+    });
+
+    if (error) {
+      setError(error.message);
+      setLoading(false);
+      return;
+    }
+
+    router.push("/dashboard");
+    router.refresh();
+  }
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -42,7 +76,7 @@ export default function SignUpPage() {
             </p>
           </div>
 
-          {/* Institutional Ledger Style Toggle */}
+          {/* Role toggle */}
           <div className="flex border border-border rounded-[2px] overflow-hidden mb-6 p-0.5 bg-background">
             <button
               type="button"
@@ -68,32 +102,92 @@ export default function SignUpPage() {
             </button>
           </div>
 
-          <SignUp
-            unsafeMetadata={{ role }}
-            appearance={{
-              elements: {
-                rootBox: "w-full",
-                card: "w-full border border-border bg-card shadow-none rounded-[2px] p-6",
-                headerTitle: "hidden",
-                headerSubtitle: "hidden",
-                socialButtonsBlockButton:
-                  "border border-border rounded-[2px] text-foreground font-medium text-sm hover:bg-card",
-                dividerLine: "bg-border",
-                dividerText: "text-muted text-xs font-mono uppercase tracking-wider",
-                formFieldLabel:
-                  "text-[12px] font-bold uppercase tracking-wider text-[#44403C]",
-                formFieldInput:
-                  "border border-border bg-card rounded-[2px] text-foreground text-sm placeholder:text-muted focus:border-foreground focus:ring-1 focus:ring-foreground/20",
-                formButtonPrimary:
-                  "bg-foreground text-background hover:bg-foreground/90 rounded-[2px] font-bold tracking-wide",
-                footerActionText: "text-muted text-xs font-mono",
-                footerActionLink:
-                  "text-foreground underline underline-offset-2 font-mono text-xs",
-                alertText: "font-mono text-xs text-[#8B2326]",
-                formFieldErrorText: "font-mono text-[11px] text-[#8B2326]",
-              },
-            }}
-          />
+          <form
+            onSubmit={handleSubmit}
+            className="border border-border bg-card rounded-[2px] p-6 flex flex-col gap-4"
+          >
+            {error && (
+              <p className="font-mono text-[11px] text-[#8B2326] border border-[#8B2326]/30 bg-[#8B2326]/5 px-3 py-2 rounded-[2px]">
+                {error}
+              </p>
+            )}
+
+            <div className="flex flex-col gap-1.5">
+              <label
+                htmlFor="fullName"
+                className="text-[12px] font-bold uppercase tracking-wider text-[#44403C]"
+              >
+                Full Name
+              </label>
+              <input
+                id="fullName"
+                type="text"
+                autoComplete="name"
+                required
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                className="border border-border bg-card rounded-[2px] text-foreground text-sm px-3 py-2 placeholder:text-muted focus:border-foreground focus:outline-none focus:ring-1 focus:ring-foreground/20"
+                placeholder="Your full name"
+              />
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <label
+                htmlFor="email"
+                className="text-[12px] font-bold uppercase tracking-wider text-[#44403C]"
+              >
+                Email Address
+              </label>
+              <input
+                id="email"
+                type="email"
+                autoComplete="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="border border-border bg-card rounded-[2px] text-foreground text-sm px-3 py-2 placeholder:text-muted focus:border-foreground focus:outline-none focus:ring-1 focus:ring-foreground/20"
+                placeholder="you@example.com"
+              />
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <label
+                htmlFor="password"
+                className="text-[12px] font-bold uppercase tracking-wider text-[#44403C]"
+              >
+                Password
+              </label>
+              <input
+                id="password"
+                type="password"
+                autoComplete="new-password"
+                required
+                minLength={6}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="border border-border bg-card rounded-[2px] text-foreground text-sm px-3 py-2 placeholder:text-muted focus:border-foreground focus:outline-none focus:ring-1 focus:ring-foreground/20"
+                placeholder="Min. 6 characters"
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="mt-2 bg-foreground text-background hover:bg-foreground/90 rounded-[2px] font-bold tracking-wide py-2.5 text-sm transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              {loading ? "Creating account…" : "Create Account"}
+            </button>
+
+            <p className="text-center font-mono text-xs text-muted">
+              Already have an account?{" "}
+              <Link
+                href="/sign-in"
+                className="text-foreground underline underline-offset-2"
+              >
+                Sign in
+              </Link>
+            </p>
+          </form>
         </div>
       </div>
     </div>
